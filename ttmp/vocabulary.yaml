@@ -5,6 +5,22 @@ topics:
       description: Backend services
     - slug: websocket
       description: WebSocket lifecycle & events
+    - slug: audio-processing
+      description: audio-processing topic
+    - slug: css-theming
+      description: css-theming topic
+    - slug: jingle-extractor
+      description: jingle-extractor topic
+    - slug: msw
+      description: msw topic
+    - slug: react
+      description: react topic
+    - slug: rtk-query
+      description: rtk-query topic
+    - slug: storybook
+      description: storybook topic
+    - slug: vite
+      description: vite topic
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
