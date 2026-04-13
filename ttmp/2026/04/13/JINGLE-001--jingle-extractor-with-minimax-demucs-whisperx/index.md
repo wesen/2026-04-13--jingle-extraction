@@ -10,7 +10,9 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: Makefile
+      Note: Build automation with install/test/example targets
 ExternalSources:
     - local:Jingle Extractor Implementation Spec.md
 Summary: ""
@@ -18,6 +20,7 @@ LastUpdated: 2026-04-13T17:00:43.274310328-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Jingle Extractor with MiniMax/Demucs/WhisperX

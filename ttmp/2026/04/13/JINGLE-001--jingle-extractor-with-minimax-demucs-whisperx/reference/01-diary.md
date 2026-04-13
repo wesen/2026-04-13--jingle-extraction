@@ -1,3 +1,22 @@
+---
+Title: ""
+Ticket: ""
+Status: ""
+Topics: []
+DocType: ""
+Intent: ""
+Owners: []
+RelatedFiles:
+    - Path: jingle_extractor.py
+      Note: Main implementation with generate/analyze/full commands
+ExternalSources: []
+Summary: ""
+LastUpdated: 0001-01-01T00:00:00Z
+WhatFor: ""
+WhenToUse: ""
+---
+
+
 # Diary: Jingle Extractor Implementation
 
 ## Goal
