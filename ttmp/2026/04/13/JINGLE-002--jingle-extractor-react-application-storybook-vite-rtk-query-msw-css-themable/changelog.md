@@ -40,3 +40,8 @@ Phase 2b: TransportBar (4 stories), PresetPanel (3 stories), ConfigEditor (3 sto
 
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/TransportBar — TransportBar
 
+
+## 2026-04-13
+
+Phase 2c: CandidateList (4 stories) + CandidateDetail (3 stories). Uses ScoreBar internally. CandidateList: rank/time/duration/score/badge/preview columns. CandidateDetail: quality breakdown, context panel, export buttons. 28 stories total across 8 components. Fixed parts.ts duplicate keys.
+

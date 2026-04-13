@@ -289,4 +289,25 @@ npm run lint  # ✅ Clean
 ./node_modules/.bin/vite build  # ✅ 270KB JS
 ```
 
-**Status**: Phase 2b complete. Moving to Phase 2c: CandidateList + CandidateDetail.
+**Status**: Phase 2c (CandidateList + CandidateDetail) complete. 28 stories across 8 components. Next: Phase 2d — Timeline decomposition.
+
+---
+
+## Step 9: Phase 2c — CandidateList + CandidateDetail
+
+**What changed**: Created CandidateList and CandidateDetail components with CSS and stories.
+
+**Files created**:
+
+| Component | Files | Stories |
+|-----------|-------|---------|
+| CandidateList | `.tsx`, `.css`, `.stories.tsx`, `index.ts` | NoneSelected, FirstSelected, MiddleSelected, WithVocalOverlap |
+| CandidateDetail | `.tsx`, `.css`, `.stories.tsx`, `index.ts` | BestCandidate, VocalOverlap, LowScore |
+
+**Parts added** to `parts.ts`: `candidateRank`, `candidateTime`, `candidateDuration`, `candidateScore`, `candidateBadge`, `candidatePreviewBtn`, `detailHeader`, `detailTitle`, `detailSubtitle`, `sectionLabel`, `overallScore`, `overallLabel`, `overallValue`
+
+**Bug fixed**: Duplicate keys in `parts.ts` — had `contextPanel`/`contextItem` defined twice. Rewrote parts.ts cleanly with all parts in one place.
+
+**Total stories**: 28 across 8 components.
+
+**Status**: Phase 2c complete.

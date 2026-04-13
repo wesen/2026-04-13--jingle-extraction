@@ -1,0 +1,93 @@
+/**
+ * CandidateList.css — Candidate list panel.
+ */
+
+[data-widget='jingle-extractor'] [data-part='candidate-list'] {
+  padding: var(--je-space-1, 2px);
+}
+
+/* Row */
+[data-widget='jingle-extractor'] [data-part='candidate-row'] {
+  display: flex;
+  align-items: center;
+  gap: var(--je-space-4, 8px);
+  padding: var(--je-space-2, 4px) var(--je-space-4, 8px);
+  cursor: pointer;
+  border-bottom: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+  font-size: var(--je-font-size-md, 11px);
+  background: transparent;
+  color: var(--je-color-text, #000);
+  width: 100%;
+  text-align: left;
+  font-family: var(--je-font-family, monospace);
+}
+
+[data-widget='jingle-extractor'] [data-part='candidate-row']:hover {
+  background: var(--je-color-bg, #c0c0c0);
+}
+
+[data-widget='jingle-extractor']
+  [data-part='candidate-row'][aria-selected='true'] {
+  background: var(--je-color-selected, #000);
+  color: var(--je-color-selected-text, #fff);
+}
+
+/* Rank badge */
+[data-widget='jingle-extractor'] [data-part='candidate-rank'] {
+  font-weight: var(--je-font-weight-bold, 700);
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Time range */
+[data-widget='jingle-extractor'] [data-part='candidate-time'] {
+  flex: 1;
+}
+
+/* Duration */
+[data-widget='jingle-extractor'] [data-part='candidate-duration'] {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* Score */
+[data-widget='jingle-extractor'] [data-part='candidate-score'] {
+  font-weight: var(--je-font-weight-bold, 700);
+  flex-shrink: 0;
+}
+
+/* Vocal overlap badge */
+[data-widget='jingle-extractor'] [data-part='candidate-badge'] {
+  font-size: var(--je-font-size-xs, 9px);
+  border: 1px solid var(--je-color-border, #000);
+  border-radius: var(--je-border-radius, 4px);
+  padding: 0 var(--je-space-1, 2px);
+  flex-shrink: 0;
+}
+
+[data-widget='jingle-extractor']
+  [data-part='candidate-row'][aria-selected='true']
+  [data-part='candidate-badge'] {
+  border-color: var(--je-color-selected-text, #fff);
+}
+
+/* Preview button */
+[data-widget='jingle-extractor'] [data-part='candidate-preview-btn'] {
+  background: var(--je-color-surface, #fff);
+  color: var(--je-color-text, #000);
+  border: none;
+  border-radius: var(--je-border-radius, 4px);
+  padding: 1px var(--je-space-2, 4px);
+  font-size: var(--je-font-size-sm, 10px);
+  font-family: var(--je-font-family, monospace);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+[data-widget='jingle-extractor']
+  [data-part='candidate-row'][aria-selected='true']
+  [data-part='candidate-preview-btn'] {
+  background: var(--je-color-selected-text, #fff);
+  color: var(--je-color-selected, #000);
+}
