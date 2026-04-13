@@ -242,21 +242,73 @@ End-to-end testing validates that all components integrate correctly and the out
 - Check error handling in `cmd_analyze()` for transcription failures
 - Run: `python jingle_extractor.py analyze --help` to see new flag
 
-### Technical details
-**Test Results:**
-- Input: 130s instrumental track, 44100Hz, MP3
-- Stems: vocals + no_vocals (each 130s, 44.1kHz)
-- Beats: 191 detected at 97.5 BPM
-- Onsets: 642 detected
-- Candidates: 5 exported (2.5-4.0s duration)
-- Output: 192kbps stereo MP3s with proper ID3v2.4 tags
+## Step 5: Death Metal + Vocals Test & CLI Fix
 
-**Timing:**
-- MiniMax generation: ~10s
-- Demucs separation: ~90s (includes 80MB model download on first run)
-- Rhythm analysis: ~2s
-- Candidate mining: ~6s
-- Clip export: ~3s
+Tested the pipeline with death metal genre including lyrics/vocals. Fixed the `--instrumental` CLI flag which had a bug where it was always True. Now instrumental mode defaults to False, allowing vocal generation when lyrics are provided. Successfully extracted instrumental clips from death metal track (mining works across genres).
+
+### Prompt Context
+
+**User prompt (verbatim):** "can we try something death metal + lyrics?"
+
+**Assistant interpretation:** Test the pipeline with a completely different genre (death metal) and include lyrics to test the vocal generation and transcription path.
+
+**Inferred user intent:** Validate the tool works across genres and with vocals/lyrics, not just instrumental underscores.
+
+**Commit (code):** TBD — "Fix --instrumental flag and test death metal with vocals"
+
+### What I did
+1. **Fixed CLI bug**: Changed `--instrumental` default from `True` to `False` in both `generate` and `full` commands - it was impossible to generate vocals before
+2. **Generated death metal with lyrics**: Prompt included "crushing guitars, blast beats, aggressive growling vocals" with verse/chorus lyrics
+3. **Demucs separation**: Successfully separated death metal track into vocals.mp3 and no_vocals.mp3 (70.9s duration, 92.3 BPM)
+4. **Tested WhisperX on growling vocals**: Timed out after 5 minutes on CPU (death metal growls are hard to transcribe + CPU is slow)
+5. **Mined instrumental clips**: Extracted 3 clips from no_vocals stem (scores 1.56-1.57, 2.0s duration each)
+
+### Why
+Cross-genre testing ensures the pipeline is robust. Death metal is extreme opposite of the "YouTube underscore" use case - tests the boundaries.
+
+### What worked
+- MiniMax generated death metal with vocals when instrumental=False
+- Lyrics with [Verse]/[Chorus] tags accepted by API
+- Demucs successfully separated extreme distorted guitars from growled vocals
+- Rhythm analysis: 92.3 BPM detected in death metal (slower than expected, but correct for this track)
+- Mining found best clips: 60.20s-62.20s, 55.60s-57.60s, 18.85s-20.85s (all 2.0s, good energy moments)
+- All 3 clips exported as valid 192kbps MP3s
+
+### What didn't work
+- WhisperX transcription on death metal vocals: timed out after 5min on CPU
+- Death metal growling is notoriously hard for ASR systems (even humans struggle!)
+- GPU would help but not available in this environment
+
+### What I learned
+- MiniMax handles extreme genre prompts well (death metal)
+- The `--instrumental` flag had a bug where it was always True due to `default=True` with `store_true` action
+- Death metal instrumental stems make excellent aggressive transition cues
+- librosa beat tracking works even on heavily distorted guitars
+
+### What was tricky to build
+- Debugging the CLI flag took a moment - argparse's `store_true` + `default=True` combination is counterintuitive
+- WhisperX on CPU is too slow for practical use on long vocal tracks
+
+### What warrants a second pair of eyes
+- The instrumental flag change affects default behavior - now defaults to vocals unless --instrumental is passed
+- This is actually correct for the MiniMax API (is_instrumental=false means vocals allowed)
+
+### What should be done in the future
+- Add GPU support for WhisperX (add `--device cuda` option)
+- Add shorter timeout for transcription with graceful fallback
+- Consider adding a "vocals" vs "no_vocals" clip mining option (currently always uses no_vocals)
+
+### Code review instructions
+- Check the `--instrumental` flag behavior in both `generate` and `full` commands
+- Test: `python jingle_extractor.py generate --prompt "test" --lyrics "test lyrics"` should now include vocals
+
+### Technical details
+**Death Metal Test Results:**
+- Input: 70.9s death metal track with growled vocals
+- Stems: vocals.mp3 + no_vocals.mp3 (each ~2.8MB)
+- Detected: 92.3 BPM, 108 beats, 309 onsets
+- Clips: 3 x 2.0s instrumental clips exported
+- WhisperX: Timeout on vocals (CPU too slow for extreme genre)
 
 ### Code review instructions
 - Check ticket structure at ttmp/2026/04/13/JINGLE-001--jingle-extractor-with-minimax-demucs-whisperx/

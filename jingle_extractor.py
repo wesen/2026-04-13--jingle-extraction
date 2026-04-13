@@ -495,6 +495,10 @@ def cmd_full(args: argparse.Namespace) -> None:
 
     print(f"\n=== Full Pipeline: {args.count} tracks, mining {args.top_n_per_track} clips each ===\n")
 
+    all_clips: list[Path] = []
+    all_candidates: list[Candidate] = []
+    generated_tracks: list[Path] = []
+
     for i in range(args.count):
         track_path = generated / f"{safe_stem(args.name)}_{i+1:02d}.mp3"
         
@@ -506,6 +510,7 @@ def cmd_full(args: argparse.Namespace) -> None:
             model=args.model,
             out_path=track_path,
         )
+        generated_tracks.append(track_path)
         
         # Mine clips from this track
         candidates = mine_candidates(
@@ -514,11 +519,32 @@ def cmd_full(args: argparse.Namespace) -> None:
             args.max_len,
             args.top_n_per_track,
         )
-        export_candidates(track_path, candidates, clips_dir, prefix=track_path.stem)
+        all_candidates.extend(candidates)
+        
+        clips = export_candidates(track_path, candidates, clips_dir, prefix=track_path.stem)
+        all_clips.extend(clips)
+
+    # Save manifest
+    manifest = {
+        "prompt": args.prompt,
+        "model": args.model,
+        "instrumental": args.instrumental,
+        "generated_tracks": [str(p) for p in generated_tracks],
+        "candidates": [asdict(c) for c in all_candidates],
+        "clips": [str(p) for p in all_clips],
+        "settings": {
+            "min_len": args.min_len,
+            "max_len": args.max_len,
+            "top_n_per_track": args.top_n_per_track,
+        },
+    }
+    manifest_path = root / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     print(f"\nDone! Output: {root}")
     print(f"  Generated tracks: {generated}")
     print(f"  Extracted clips: {clips_dir}")
+    print(f"  Manifest: {manifest_path}")
 
 
 # ============================================================================
@@ -552,7 +578,7 @@ Examples:
     gen.add_argument("--prompt", required=True, help="Music description prompt")
     gen.add_argument("--name", default="minimax_track", help="Base filename")
     gen.add_argument("--lyrics", default="", help="Optional lyrics with [Hook], [Verse] tags")
-    gen.add_argument("--instrumental", action="store_true", default=True, help="Generate instrumental")
+    gen.add_argument("--instrumental", action="store_true", default=False, help="Generate instrumental (no vocals)")
     gen.add_argument("--model", default="music-2.6", help="MiniMax model version")
     gen.add_argument("--count", type=int, default=3, help="Number of tracks to generate")
     gen.add_argument("--out-dir", default="out/generated", help="Output directory")
@@ -573,7 +599,7 @@ Examples:
     full.add_argument("--prompt", required=True, help="Music description prompt")
     full.add_argument("--name", default="youtube_underscore", help="Base filename")
     full.add_argument("--lyrics", default="", help="Optional lyrics")
-    full.add_argument("--instrumental", action="store_true", default=True, help="Instrumental only")
+    full.add_argument("--instrumental", action="store_true", default=False, help="Instrumental only (no vocals)")
     full.add_argument("--model", default="music-2.6", help="MiniMax model version")
     full.add_argument("--count", type=int, default=4, help="Number of tracks to generate")
     full.add_argument("--min-len", type=float, default=2.0, help="Minimum clip duration")
