@@ -9,6 +9,20 @@ Owners: []
 RelatedFiles:
     - Path: ../../../../../../../../../Downloads/jingle-extractor-mac.jsx
       Note: Source prototype JSX being converted to React application
+    - Path: jingle-extractor-ui/src/api/jingleApi.ts
+      Note: RTK Query API definition
+    - Path: jingle-extractor-ui/src/app/theme/theme-dark.css
+      Note: Modern dark theme
+    - Path: jingle-extractor-ui/src/app/theme/theme-light.css
+      Note: Clean light theme
+    - Path: jingle-extractor-ui/src/app/theme/theme-retro.css
+      Note: Retro 1-bit Mac theme
+    - Path: jingle-extractor-ui/src/app/theme/tokens.css
+      Note: Token definitions (--je-* CSS custom properties)
+    - Path: jingle-extractor-ui/src/mocks/fixtures/thrash-metal.json
+      Note: Mock fixture matching prototype data shapes
+    - Path: jingle-extractor-ui/src/mocks/handlers.ts
+      Note: MSW request handlers
     - Path: jingle_extractor.py
       Note: Python backend pipeline that will serve the REST API
     - Path: out/thrash_analysis/lyrics_aligned.json
@@ -21,6 +35,13 @@ LastUpdated: 0001-01-01T00:00:00Z
 WhatFor: ""
 WhenToUse: ""
 ---
+
+
+
+
+
+
+
 
 
 

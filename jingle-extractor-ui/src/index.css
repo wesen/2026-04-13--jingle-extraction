@@ -1,0 +1,15 @@
+/* index.css — Global resets. Component styles live in each component's .css file. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}

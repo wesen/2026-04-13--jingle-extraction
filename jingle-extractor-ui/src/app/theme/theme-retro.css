@@ -1,0 +1,44 @@
+/**
+ * theme-retro.css — 1-bit Mac aesthetic (matches the original prototype).
+ * Applied via data-je-theme="retro" on the root element.
+ */
+
+[data-je-theme='retro'] {
+  --je-color-bg: #c0c0c0;
+  --je-color-surface: #ffffff;
+  --je-color-text: #000000;
+  --je-color-text-muted: rgba(0, 0, 0, 0.5);
+  --je-color-text-inverse: #ffffff;
+  --je-color-primary: #000000;
+  --je-color-accent: #000000;
+  --je-color-border: #000000;
+  --je-color-error: #000000;
+  --je-color-selected: #000000;
+  --je-color-selected-text: #ffffff;
+  --je-color-success: #000000;
+  --je-color-warning: #000000;
+  --je-color-warning-bg: #ffffff;
+  --je-color-waveform: #000000;
+  --je-color-beat-line: rgba(0, 0, 0, 0.07);
+  --je-color-playhead: #000000;
+  --je-color-candidate-fill: rgba(0, 0, 0, 0.06);
+  --je-color-candidate-fill-selected: rgba(
+    0,
+    0,
+    0,
+    0.18
+  );
+  --je-color-candidate-border: rgba(0, 0, 0, 0.3);
+  --je-color-candidate-border-selected: rgba(
+    0,
+    0,
+    0,
+    0.9
+  );
+  --je-color-vocal-region: rgba(0, 0, 0, 0.12);
+  --je-border-width: 2px;
+  --je-border-radius: 4px;
+  --je-radius-lg: 6px;
+  --je-font-family: 'Geneva', 'Monaco', 'Courier New', monospace;
+  --je-font-family-title: 'Chicago_mac', 'Geneva', monospace;
+}

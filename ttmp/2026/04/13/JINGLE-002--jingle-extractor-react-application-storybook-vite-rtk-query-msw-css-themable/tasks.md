@@ -2,10 +2,10 @@
 
 ## TODO
 
-- [ ] Add tasks here
+- [x] Add tasks here
 
-- [ ] Scaffold Vite + TypeScript + Storybook project
-- [ ] Create token CSS (tokens.css, theme-retro.css, theme-dark.css, theme-light.css)
+- [x] Scaffold Vite + TypeScript + Storybook project
+- [x] Create token CSS (tokens.css, theme-retro.css, theme-dark.css, theme-light.css)
 - [ ] Extract leaf components (ScoreBar, MacWindow, MenuBar)
 - [ ] Extract interactive panels (TransportBar, PresetPanel, ConfigEditor)
 - [ ] Extract list/detail components (CandidateList, CandidateDetail)

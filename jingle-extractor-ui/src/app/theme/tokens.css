@@ -1,0 +1,84 @@
+/**
+ * tokens.css — Design token definitions for Jingle Extractor UI.
+ * All tokens are prefixed with --je- to avoid collisions.
+ *
+ * Usage: var(--je-color-bg), var(--je-space-3), etc.
+ * All tokens are set at :root level so they can be overridden per-theme.
+ */
+
+:root {
+  /* ── Color tokens ─────────────────────────────────────────────────── */
+  --je-color-bg: #c0c0c0;
+  --je-color-surface: #ffffff;
+  --je-color-text: #000000;
+  --je-color-text-muted: rgba(0, 0, 0, 0.5);
+  --je-color-text-inverse: #ffffff;
+  --je-color-primary: #000000;
+  --je-color-accent: #000000;
+  --je-color-border: #000000;
+  --je-color-error: #000000;
+  --je-color-selected: #000000;
+  --je-color-selected-text: #ffffff;
+  --je-color-success: #000000;
+  --je-color-warning: #000000;
+  --je-color-warning-bg: #ffffff;
+  --je-color-waveform: #000000;
+  --je-color-beat-line: rgba(0, 0, 0, 0.07);
+  --je-color-playhead: #000000;
+  --je-color-candidate-fill: rgba(0, 0, 0, 0.06);
+  --je-color-candidate-fill-selected: rgba(0, 0, 0, 0.18);
+  --je-color-candidate-border: rgba(0, 0, 0, 0.3);
+  --je-color-candidate-border-selected: rgba(0, 0, 0, 0.9);
+  --je-color-vocal-region: rgba(0, 0, 0, 0.12);
+
+  /* ── Typography tokens ───────────────────────────────────────────── */
+  --je-font-family: 'Geneva', 'Monaco', 'Courier New', monospace;
+  --je-font-family-title: 'Chicago_mac', 'Geneva', monospace;
+  --je-font-size-xs: 9px;
+  --je-font-size-sm: 10px;
+  --je-font-size-md: 11px;
+  --je-font-size-lg: 12px;
+  --je-font-size-xl: 14px;
+  --je-font-size-xxl: 16px;
+  --je-font-weight-normal: 400;
+  --je-font-weight-bold: 700;
+
+  /* ── Spacing tokens ──────────────────────────────────────────────── */
+  --je-space-1: 2px;
+  --je-space-2: 4px;
+  --je-space-3: 6px;
+  --je-space-4: 8px;
+  --je-space-5: 10px;
+  --je-space-6: 14px;
+  --je-space-8: 18px;
+  --je-space-10: 24px;
+
+  /* ── Border / radius tokens ──────────────────────────────────────── */
+  --je-border-width: 2px;
+  --je-border-radius: 4px;
+  --je-radius-lg: 6px;
+  --je-radius-xl: 8px;
+
+  /* ── Layout tokens ───────────────────────────────────────────────── */
+  --je-menubar-height: 24px;
+  --je-timeline-height: 210px;
+  --je-sidebar-width: 290px;
+  --je-detail-width: 280px;
+  --je-window-min-height: 0px;
+
+  /* ── Component tokens ────────────────────────────────────────────── */
+  --je-handle-width: 7px;
+  --je-handle-grip-size: 2.5px;
+  --je-transport-btn-size: 28px;
+  --je-score-bar-block-width: 6px;
+  --je-score-bar-block-height: 12px;
+  --je-score-bar-gap: 1px;
+  --je-label-width: 52px;
+
+  /* ── Dither / texture tokens ─────────────────────────────────────── */
+  /* 2×2 checkerboard SVG, used for dither fills */
+  --je-dither-checker: url("data:image/svg+xml,%3Csvg%20width%3D%272%27%20height%3D%272%27%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%3E%3Crect%20x%3D%270%27%20y%3D%270%27%20width%3D%271%27%20height%3D%271%27%20fill%3D%27black%27%2F%3E%3Crect%20x%3D%271%27%20y%3D%271%27%20width%3D%271%27%20height%3D%271%27%20fill%3D%27black%27%2F%3E%3C%2Fsvg%3E");
+  /* 1×2 horizontal-line SVG, used for title-bar texture */
+  --je-dither-lines: url("data:image/svg+xml,%3Csvg%20width%3D%271%27%20height%3D%272%27%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%3E%3Crect%20x%3D%270%27%20y%3D%270%27%20width%3D%271%27%20height%3D%271%27%20fill%3D%27black%27%2F%3E%3C%2Fsvg%3E");
+  --je-dither-repeat: 1px 2px;
+}

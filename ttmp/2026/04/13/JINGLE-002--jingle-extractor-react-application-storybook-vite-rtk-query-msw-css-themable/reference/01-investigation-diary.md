@@ -139,4 +139,77 @@ remarquee upload bundle --dry-run ...
 remarquee upload bundle ...
 ```
 
-**Status**: In progress.
+**Status**: Completed. Uploaded to /ai/2026/04/13/JINGLE-002.
+
+---
+
+## Step 6: Phase 1 — Scaffold (Task #2)
+
+**What changed**: Created the full project scaffold: Vite + TypeScript + Storybook + RTK Query + MSW + CSS tokens.
+
+**Commands run**:
+```bash
+# Scaffold Vite project
+npm create vite@latest jingle-extractor-ui -- --template react-ts
+cd jingle-extractor-ui
+npm install
+
+# Install production deps
+npm install @reduxjs/toolkit react-redux msw
+
+# Storybook already present from init
+npm install
+
+# Install TypeScript (was missing)
+npm install typescript --save-dev
+
+# Install MSW storybook addon
+npm install msw-storybook-addon
+```
+
+**Files created** (in `jingle-extractor-ui/src/`):
+
+| File | Purpose |
+|------|---------|
+| `api/types.ts` | All TypeScript interfaces (Track, TimelineData, VocalSegment, Candidate, AnalysisConfig, etc.) |
+| `app/store.ts` | Redux store with RTK Query middleware |
+| `app/theme/tokens.css` | 30+ CSS custom property tokens |
+| `app/theme/theme-retro.css` | Retro 1-bit Mac theme |
+| `app/theme/theme-dark.css` | Modern dark theme |
+| `app/theme/theme-light.css` | Clean light theme |
+| `features/analysis/analysisSlice.ts` | Redux slice for UI state (selectedCandidate, playhead, stem, config, theme) |
+| `features/audio/audioSlice.ts` | Redux slice for audio playback |
+| `api/jingleApi.ts` | RTK Query API with 7 endpoints |
+| `mocks/handlers.ts` | MSW handlers for all API endpoints |
+| `mocks/browser.ts` | MSW browser worker setup |
+| `mocks/fixtures/thrash-metal.json` | Full mock response extracted from prototype |
+| `utils/constants.ts` | DEFAULT_PRESETS object |
+| `utils/format.ts` | fmt(), fmtCompact(), fmtDuration(), fmtBpm() |
+| `hooks/useRedux.ts` | Typed useDispatch / useSelector hooks |
+| `components/JingleExtractor/parts.ts` | 35 data-part name constants |
+| `App.tsx` | Root with theme switcher and placeholder |
+| `main.tsx` | Entry point with MSW worker + Redux Provider |
+| `index.css` | Minimal global resets |
+| `prototype/jingle-extractor-mac.jsx` | Copy of source prototype |
+
+**Bugs fixed**:
+- `analysisReducer` / `audioReducer` → changed to `analysisSlice.reducer` / `audioSlice.reducer` (exported named export was `.reducer`)
+- `PresetName` unused import in `jingleApi.ts` and `handlers.ts` → removed
+- `useState`, `Provider`, `store` unused in `App.tsx` → removed
+- `preview.ts` → renamed `preview.tsx` for JSX support
+- `typescript` missing → added to devDependencies
+
+**Verification**:
+```bash
+./node_modules/.bin/tsc -b  # ✅ No errors
+./node_modules/.bin/vite build  # ✅ 270KB JS, 4.7KB CSS
+npm run lint  # ✅ Clean
+```
+
+**What worked**: The Storybook + MSW integration went smoothly. The fixture extraction from the prototype was mechanical. CSS token design maps 1:1 from the hardcoded inline values.
+
+**What didn't work**: Nothing major. TypeScript compilation errors were all fixable.
+
+**What was tricky**: Ensuring `analysisSlice.reducer` vs `analysisReducer` — the slice exports `.reducer` as a named export, not a default export of `analysisSlice`. Had to verify the export shape.
+
+**Status**: Phase 1 complete. All foundation files created. TypeScript clean, Vite builds, lint passes.

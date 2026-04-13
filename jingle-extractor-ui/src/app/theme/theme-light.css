@@ -1,0 +1,44 @@
+/**
+ * theme-light.css — Clean light/white theme.
+ * Applied via data-je-theme="light" on the root element.
+ */
+
+[data-je-theme='light'] {
+  --je-color-bg: #f5f5f5;
+  --je-color-surface: #ffffff;
+  --je-color-text: #333333;
+  --je-color-text-muted: rgba(51, 51, 51, 0.5);
+  --je-color-text-inverse: #ffffff;
+  --je-color-primary: #0066cc;
+  --je-color-accent: #0066cc;
+  --je-color-border: #dddddd;
+  --je-color-error: #cc0000;
+  --je-color-selected: #0066cc;
+  --je-color-selected-text: #ffffff;
+  --je-color-success: #008800;
+  --je-color-warning: #996600;
+  --je-color-warning-bg: rgba(153, 102, 0, 0.08);
+  --je-color-waveform: #0066cc;
+  --je-color-beat-line: rgba(0, 0, 0, 0.05);
+  --je-color-playhead: #0066cc;
+  --je-color-candidate-fill: rgba(0, 102, 204, 0.08);
+  --je-color-candidate-fill-selected: rgba(
+    0,
+    102,
+    204,
+    0.18
+  );
+  --je-color-candidate-border: rgba(0, 102, 204, 0.3);
+  --je-color-candidate-border-selected: rgba(
+    0,
+    102,
+    204,
+    0.9
+  );
+  --je-color-vocal-region: rgba(0, 102, 204, 0.08);
+  --je-border-width: 1px;
+  --je-border-radius: 8px;
+  --je-radius-lg: 10px;
+  --je-font-family: 'Inter', 'SF Pro', system-ui, sans-serif;
+  --je-font-family-title: 'Inter', 'SF Pro', system-ui, sans-serif;
+}
