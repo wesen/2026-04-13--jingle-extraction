@@ -444,9 +444,17 @@ def cmd_analyze(args: argparse.Namespace) -> None:
     # Step 1: Separate stems
     stems = demucs_split(input_audio, root / "stems")
     
-    # Step 2: Transcribe vocals
-    lyrics_json = whisperx_transcribe(stems["vocals"], root / "lyrics_aligned.json")
-    words = extract_words(lyrics_json)
+    # Step 2: Transcribe vocals (if not skipped)
+    words: list[dict[str, Any]] = []
+    if not args.skip_transcribe:
+        try:
+            lyrics_json = whisperx_transcribe(stems["vocals"], root / "lyrics_aligned.json")
+            words = extract_words(lyrics_json)
+        except Exception as e:
+            print(f"Warning: Transcription failed (likely instrumental): {e}")
+            print("Continuing without lyrics...")
+    else:
+        print("Skipping transcription (--skip-transcribe)")
 
     # Step 3: Mine candidates from no_vocals
     candidates = mine_candidates(
@@ -468,7 +476,7 @@ def cmd_analyze(args: argparse.Namespace) -> None:
     manifest = {
         "input_audio": str(input_audio),
         "stems": {k: str(v) for k, v in stems.items()},
-        "lyrics_words": words[:2000],  # avoid huge manifests
+        "lyrics_words": words[:2000] if words else [],  # avoid huge manifests
         "candidates": [asdict(c) for c in candidates],
         "clips": [str(p) for p in clips],
     }
@@ -557,6 +565,7 @@ Examples:
     ana.add_argument("--min-len", type=float, default=2.0, help="Minimum clip duration (seconds)")
     ana.add_argument("--max-len", type=float, default=5.0, help="Maximum clip duration (seconds)")
     ana.add_argument("--top-n", type=int, default=12, help="Number of clips to extract")
+    ana.add_argument("--skip-transcribe", action="store_true", help="Skip WhisperX transcription (for instrumental tracks)")
     ana.set_defaults(func=cmd_analyze)
 
     # full

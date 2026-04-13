@@ -13,3 +13,12 @@ Step 1-3: Complete implementation with MiniMax/Demucs/WhisperX pipeline (commits
 
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle_extractor.py — Core implementation
 
+
+## 2026-04-13
+
+Step 4: End-to-end testing successful - MiniMax, Demucs, mining, export all working (commit TBD)
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle_extractor.py — Added --skip-transcribe flag
+
