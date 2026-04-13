@@ -1,0 +1,46 @@
+/**
+ * ScoreBar.css — Pixel-art 1-bit score bar.
+ * Displays a value as a row of filled/empty blocks.
+ * Theme via --je-color-text, --je-border-width.
+ */
+
+[data-widget='jingle-extractor'] [data-part='score-bar'] {
+  display: flex;
+  align-items: center;
+  gap: var(--je-space-2, 4px);
+  margin-bottom: var(--je-space-1, 2px);
+}
+
+[data-widget='jingle-extractor'] [data-part='score-bar-label'] {
+  width: var(--je-label-width, 52px);
+  font-size: var(--je-font-size-md, 11px);
+  font-family: var(--je-font-family, monospace);
+  text-align: right;
+  color: var(--je-color-text, #000);
+}
+
+[data-widget='jingle-extractor'] [data-part='score-bar-track'] {
+  display: flex;
+  gap: var(--je-score-bar-gap, 1px);
+}
+
+[data-widget='jingle-extractor'] [data-part='score-bar-block'] {
+  width: var(--je-score-bar-block-width, 6px);
+  height: var(--je-score-bar-block-height, 12px);
+  border: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+  background: transparent;
+  flex-shrink: 0;
+}
+
+[data-widget='jingle-extractor']
+  [data-part='score-bar-block'][data-filled='true'] {
+  background: var(--je-color-text, #000);
+}
+
+[data-widget='jingle-extractor'] [data-part='score-bar-value'] {
+  width: 24px;
+  font-size: var(--je-font-size-md, 11px);
+  font-family: var(--je-font-family, monospace);
+  text-align: right;
+  color: var(--je-color-text, #000);
+}

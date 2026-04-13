@@ -213,3 +213,46 @@ npm run lint  # ✅ Clean
 **What was tricky**: Ensuring `analysisSlice.reducer` vs `analysisReducer` — the slice exports `.reducer` as a named export, not a default export of `analysisSlice`. Had to verify the export shape.
 
 **Status**: Phase 1 complete. All foundation files created. TypeScript clean, Vite builds, lint passes.
+
+---
+
+## Step 7: Phase 2a — Extract Leaf Components (ScoreBar, MacWindow, MenuBar) with Stories
+
+**What changed**: Created 3 leaf components with CSS and Storybook stories.
+
+**Files created**:
+
+| Component | Files | Stories |
+|-----------|-------|---------|
+| ScoreBar | `ScoreBar.tsx`, `ScoreBar.css`, `index.ts` | HighScore, MediumScore, LowScore, PerfectScore, ZeroScore |
+| MacWindow | `MacWindow.tsx`, `MacWindow.css`, `index.ts` | Empty, WithContent, Scrollable |
+| MenuBar | `MenuBar.tsx`, `MenuBar.css`, `index.ts` | Default (thrash track), SlowTrack, ShortTrack |
+
+**Parts added** to `parts.ts`:
+- `window`, `windowButton`, `titleBar`, `titleBarLeft`, `titleText`, `titleBarRight`, `windowBody`
+- `menuLogo`, `menuItem`, `menuSpacer`, `trackInfo`, `trackBadge`
+
+**Key patterns applied**:
+- `data-part` attributes on every interactive/semantic element
+- CSS uses `:where([data-widget='jingle-extractor'])` scoping
+- All inline styles migrated to CSS using `--je-*` token variables
+- ARIA attributes (`role="meter"`, `aria-label`, `aria-valuenow`) for accessibility
+- All stories use `args:` with concrete prop values (no `render()` without args — Storybook 10 requires args)
+
+**Bugs fixed**:
+- `AllVariants` stories used `render()` without `args` — Storybook 10 stricter typing requires args. Removed composite stories and kept simple single-variant stories.
+- `PARTS.scoreBarTrack` and `PARTS.scoreBarLabel` were missing from `parts.ts` → added.
+
+**Verification**:
+```bash
+./node_modules/.bin/tsc -b  # ✅ No errors
+./node_modules/.bin/vite build  # ✅ 270KB JS, 4.7KB CSS
+```
+
+**What worked**: The leaf components (no children) were straightforward to extract. CSS token migration was mechanical — every `style={{}}` value became `var(--je-*)`. Storybook stories with `args:` are clean and type-safe.
+
+**What didn't work**: Nothing.
+
+**What was tricky**: Storybook 10's `satisfies Story` with `render()` only stories — had to remove composite stories. The fix is to keep stories simple with `args:` props.
+
+**Status**: Phase 2a (ScoreBar, MacWindow, MenuBar) complete. 3 components, 3 CSS files, 3 index.ts, 10 stories total.

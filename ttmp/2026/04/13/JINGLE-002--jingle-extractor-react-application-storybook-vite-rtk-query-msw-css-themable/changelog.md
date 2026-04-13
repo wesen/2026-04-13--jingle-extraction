@@ -22,3 +22,12 @@ Phase 1 scaffold complete: Vite + TypeScript + Storybook + RTK Query + MSW + CSS
 
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/api/types.ts — Core TypeScript interfaces for all domain types
 
+
+## 2026-04-13
+
+Phase 2a: Extracted 3 leaf components with CSS + Storybook stories. ScoreBar (5 stories), MacWindow (3 stories), MenuBar (3 stories). All use data-part selectors, --je-* CSS tokens, ARIA attributes. TypeScript clean, Vite builds.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/ScoreBar — ScoreBar
+

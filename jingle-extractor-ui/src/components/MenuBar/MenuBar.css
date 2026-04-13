@@ -1,0 +1,56 @@
+/**
+ * MenuBar.css — Application menu bar.
+ */
+
+[data-widget='jingle-extractor'] [data-part='menu-bar'] {
+  background: var(--je-color-surface, #fff);
+  border-bottom: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+  padding: var(--je-space-1, 2px) var(--je-space-6, 14px);
+  display: flex;
+  align-items: center;
+  gap: var(--je-space-8, 18px);
+  font-size: var(--je-font-size-lg, 12px);
+  font-weight: var(--je-font-weight-bold, 700);
+  font-family: var(--je-font-family, monospace);
+  height: var(--je-menubar-height, 24px);
+  user-select: none;
+}
+
+[data-widget='jingle-extractor'] [data-part='menu-logo'] {
+  font-size: var(--je-font-size-xl, 14px);
+}
+
+[data-widget='jingle-extractor'] [data-part='menu-item'] {
+  cursor: default;
+  padding: 0 var(--je-space-2, 4px);
+  color: var(--je-color-text, #000);
+}
+
+[data-widget='jingle-extractor'] [data-part='menu-item']:hover {
+  text-decoration: underline;
+}
+
+[data-widget='jingle-extractor'] [data-part='menu-spacer'] {
+  flex: 1;
+}
+
+[data-widget='jingle-extractor'] [data-part='track-info'] {
+  margin-left: auto;
+  font-weight: var(--je-font-weight-normal, 400);
+  font-size: var(--je-font-size-md, 11px);
+  color: var(--je-color-text-muted, rgba(0, 0, 0, 0.5));
+  display: flex;
+  gap: var(--je-space-3, 6px);
+  align-items: center;
+}
+
+[data-widget='jingle-extractor'] [data-part='track-badge'] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--je-space-1, 2px);
+  padding: 1px var(--je-space-2, 4px);
+  border: 1px solid var(--je-color-border, #000);
+  border-radius: var(--je-border-radius, 4px);
+  font-size: var(--je-font-size-xs, 9px);
+  font-weight: var(--je-font-weight-bold, 700);
+}

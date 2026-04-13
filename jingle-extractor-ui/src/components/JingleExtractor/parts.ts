@@ -6,6 +6,13 @@
  *
  * Part hierarchy:
  *   root
+ *   ├── window (MacWindow)
+ *   │   ├── window-button
+ *   │   ├── title-bar
+ *   │   │   ├── title-bar-left
+ *   │   │   ├── title-text
+ *   │   │   └── title-bar-right
+ *   │   └── window-body
  *   ├── menu-bar
  *   ├── sidebar
  *   │   ├── preset-panel
@@ -39,6 +46,8 @@
  *   │       └── candidate-detail
  *   │           ├── quality-panel
  *   │           │   └── score-bar
+ *   │           │       ├── score-bar-label
+ *   │           │       ├── score-bar-track
  *   │           │       └── score-bar-block
  *   │           ├── context-panel
  *   │           │   └── context-item
@@ -50,17 +59,32 @@
 export const WIDGET = 'jingle-extractor' as const;
 
 export const PARTS = {
-  // Root
+  // ── MacWindow ──────────────────────────────────────────────────────────
+  window: 'window',
+  windowButton: 'window-button',
+  titleBar: 'title-bar',
+  titleBarLeft: 'title-bar-left',
+  titleText: 'title-text',
+  titleBarRight: 'title-bar-right',
+  windowBody: 'window-body',
+
+  // ── Root ────────────────────────────────────────────────────────────────
   root: 'root',
-
-  // Menu bar
   menuBar: 'menu-bar',
+  menuLogo: 'menu-logo',
+  menuItem: 'menu-item',
+  menuSpacer: 'menu-spacer',
+  trackInfo: 'track-info',
+  trackBadge: 'track-badge',
 
-  // Sidebar
   sidebar: 'sidebar',
+
+  // ── Preset panel ────────────────────────────────────────────────────────
   presetPanel: 'preset-panel',
   presetList: 'preset-list',
   presetItem: 'preset-item',
+
+  // ── Config editor ───────────────────────────────────────────────────────
   configEditor: 'config-editor',
   configTextarea: 'config-textarea',
   configError: 'config-error',
@@ -68,7 +92,7 @@ export const PARTS = {
   runButton: 'run-button',
   resetButton: 'reset-button',
 
-  // Main panel
+  // ── Main panel ─────────────────────────────────────────────────────────
   mainPanel: 'main-panel',
   transportBar: 'transport-bar',
   stemToggle: 'stem-toggle',
@@ -77,7 +101,7 @@ export const PARTS = {
   transportControls: 'transport-controls',
   transportBtn: 'transport-btn',
 
-  // Timeline
+  // ── Timeline ────────────────────────────────────────────────────────────
   timeline: 'timeline',
   beatGrid: 'beat-grid',
   waveform: 'waveform',
@@ -88,14 +112,20 @@ export const PARTS = {
   vocalLabel: 'vocal-label',
   playhead: 'playhead',
 
-  // Bottom panel
+  // ── Bottom panel ────────────────────────────────────────────────────────
   bottomPanel: 'bottom-panel',
   candidateList: 'candidate-list',
   candidateRow: 'candidate-row',
   candidateDetail: 'candidate-detail',
   qualityPanel: 'quality-panel',
+
+  // ── Score bar ───────────────────────────────────────────────────────────
   scoreBar: 'score-bar',
+  scoreBarLabel: 'score-bar-label',
+  scoreBarTrack: 'score-bar-track',
   scoreBarBlock: 'score-bar-block',
+
+  // ── Context + buttons ──────────────────────────────────────────────────
   contextPanel: 'context-panel',
   contextItem: 'context-item',
   buttonRow: 'button-row',

@@ -1,0 +1,68 @@
+/**
+ * MacWindow.css — Mac OS-style window chrome.
+ * A bordered container with a title bar and scrollable body.
+ * Theme via tokens.
+ */
+
+[data-widget='jingle-extractor'] [data-part='window'] {
+  border: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+  border-radius: var(--je-radius-lg, 6px);
+  background: var(--je-color-surface, #fff);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Title bar */
+[data-widget='jingle-extractor'] [data-part='title-bar'] {
+  background: var(--je-color-surface, #fff);
+  border-bottom: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+  padding: var(--je-space-1, 2px) var(--je-space-2, 4px);
+  display: flex;
+  align-items: center;
+  gap: var(--je-space-3, 6px);
+  min-height: var(--je-menubar-height, 24px);
+  user-select: none;
+}
+
+[data-widget='jingle-extractor'] [data-part='window-button'] {
+  width: 13px;
+  height: 13px;
+  border: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+  border-radius: var(--je-border-radius, 4px);
+  flex-shrink: 0;
+  background: var(--je-color-surface, #fff);
+}
+
+[data-widget='jingle-extractor'] [data-part='title-bar-left'] {
+  flex: 1;
+  height: 13px;
+  background-image: var(--je-dither-lines, none);
+  background-size: var(--je-dither-repeat, 1px 2px);
+  background-repeat: repeat;
+}
+
+[data-widget='jingle-extractor'] [data-part='title-text'] {
+  font-family: var(--je-font-family-title, monospace);
+  font-size: var(--je-font-size-lg, 12px);
+  font-weight: var(--je-font-weight-bold, 700);
+  padding: 0 var(--je-space-3, 6px);
+  background: var(--je-color-surface, #fff);
+  flex-shrink: 0;
+  color: var(--je-color-text, #000);
+  white-space: nowrap;
+}
+
+[data-widget='jingle-extractor'] [data-part='title-bar-right'] {
+  flex: 1;
+  height: 13px;
+  background-image: var(--je-dither-lines, none);
+  background-size: var(--je-dither-repeat, 1px 2px);
+  background-repeat: repeat;
+}
+
+/* Window body */
+[data-widget='jingle-extractor'] [data-part='window-body'] {
+  flex: 1;
+  overflow: auto;
+}
