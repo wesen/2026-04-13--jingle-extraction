@@ -37,3 +37,8 @@ Step 6: Full WhisperX transcription on thrash metal - 22 words detected, 5 clips
 
 Step 7: Extracted 10 vocal jingles (5 vocal + 5 inst pairs) using WhisperX timestamps (TBD)
 
+
+## 2026-04-13
+
+Step 8: Added 5 mixed inst+vocal jingles using pydub overlay (15 total files) (TBD)
+

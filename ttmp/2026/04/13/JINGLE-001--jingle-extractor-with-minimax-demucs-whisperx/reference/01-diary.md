@@ -458,11 +458,77 @@ Using transcription timestamps allows extracting jingles specifically at vocal m
 - Review the extraction script logic (inline Python in bash)
 - Check the README.md in out/vocal_jingles/ for completeness
 
+## Step 8: Create Mixed (Inst+Vocal) Jingles
+
+Added mixed versions by overlaying vocal stems on instrumental stems using pydub's `overlay()` method. Now each vocal phrase has 3 versions: vocal-only, instrumental-only, and full mix (inst+vocal blended). Total: 15 jingle files.
+
+### Prompt Context
+
+**User prompt (verbatim):** "the jingles should be inst+vocal too"
+
+**Assistant interpretation:** Create blended/mixed versions where both stems are combined together, not just separate files. The user wants "full" jingles with both music and vocals.
+
+**Inferred user intent:** Have ready-to-use mixed jingles that don't require manual mixing in post-production.
+
+**Commit (code):** TBD — "Add mixed inst+vocal jingles using pydub overlay"
+
+### What I did
+1. **Loaded stems again**: vocals.mp3 and no_vocals.mp3 (same as Step 7)
+2. **Used pydub overlay**: `mixed = inst_clip.overlay(vocal_clip)`
+3. **Created 5 mixed jingles**:
+   - mixed_01_YOW_2.3s.mp3
+   - mixed_02_SPINNIN__POWER_2.2s.mp3
+   - mixed_03_BURNING_FAST_2.3s.mp3
+   - mixed_04_NO_RETREAT_UNTIL_THE_LAST_4.6s.mp3
+   - mixed_05_Stress_attack..._10.1s.mp3
+4. **Applied same fades**: 20ms fade-in, 50ms fade-out
+5. **Updated README**: Added "Quick Reference" section with recommended mixed jingles by category
+
+### Why
+Mixed jingles are ready-to-use without additional DAW work. Users can grab a mixed file and drop it directly into their project.
+
+### What worked
+- pydub `overlay()` works perfectly for blending stems
+- Mixed files have same duration as separate stems (overlay doesn't change length)
+- File sizes match (55K, 54K, 56K, 111K, 238K)
+- All 15 files valid 192kbps MP3s
+
+### What didn't work
+- N/A - overlay operation is straightforward
+
+### What I learned
+- pydub overlay preserves the duration of the first audio segment (instrumental in this case)
+- Since stems are time-aligned by Demucs, overlay is sample-accurate
+- Having 3 versions (vocal/inst/mixed) gives maximum flexibility
+
+### What was tricky to build
+- N/A - simple overlay operation
+
+### What warrants a second pair of eyes
+- Check if vocal levels in the mix are balanced (using full volume for both stems)
+- May need volume adjustment if vocals are too loud/quiet in context
+
+### What should be done in the future
+- Add volume/gain control to the mixing script (e.g., `--vocal-gain -3dB`)
+- Consider adding EQ or compression options for the mixed output
+- Create a proper `extract-vocal-jingles` command in jingle_extractor.py
+
+### Code review instructions
+- Verify the overlay logic: `mixed = inst_clip.overlay(vocal_clip)`
+- Check README quick reference section is helpful
+
 ### Technical details
-**Extraction Results:**
-- 5 vocal segments → 5 vocal jingles + 5 instrumental jingles = 10 total
-- Clip durations: 2.2s, 2.3s, 2.3s, 2.3s, 4.6s, 10.1s (varies by phrase length)
-- Total size: ~1.1MB for all 10 jingles
-- Format: 192kbps MP3, 44.1kHz stereo, ID3v2.4 tags
+**Final Collection:**
+- 5 vocal jingles (isolated vocals)
+- 5 instrumental jingles (backing tracks)
+- 5 mixed jingles (inst + vocal blended)
+- **Total: 15 jingle files**
+- Total size: ~1.6MB
 - Location: `out/vocal_jingles/`
-- Documentation: `out/vocal_jingles/README.md`
+
+**Mixed Jingle Sizes:**
+- mixed_01_YOW_2.3s.mp3: 55K
+- mixed_02_SPINNIN__POWER_2.2s.mp3: 54K
+- mixed_03_BURNING_FAST_2.3s.mp3: 56K
+- mixed_04_NO_RETREAT..._4.6s.mp3: 111K
+- mixed_05_..._10.1s.mp3: 238K
