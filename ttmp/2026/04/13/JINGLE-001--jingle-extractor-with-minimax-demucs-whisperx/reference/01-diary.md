@@ -15,12 +15,15 @@ RelatedFiles:
       Note: Sample generated MiniMax track
     - Path: out/thrash_analysis/lyrics_aligned.json
       Note: WhisperX transcription with word-level timestamps
+    - Path: out/vocal_jingles
+      Note: Vocal-specific jingles extracted from transcription timestamps (10 files)
 ExternalSources: []
 Summary: ""
 LastUpdated: 0001-01-01T00:00:00Z
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -389,3 +392,77 @@ Full pipeline validation including the most computationally expensive component 
 ### Technical details
 - Ticket: JINGLE-001
 - Location: /home/manuel/code/wesen/2026-04-13--jingle-extraction
+
+## Step 7: Extract Vocal-Specific Jingles from Transcription
+
+Created a script to extract jingles centered on each vocal snippet using WhisperX word-level timestamps. For each of the 5 transcribed vocal phrases, extracted both vocal and instrumental stems with padding and fades. Created 10 jingle files (5 vocal + 5 instrumental pairs) specifically aligned to vocal moments.
+
+### Prompt Context
+
+**User prompt (verbatim):** "can you extract jingles for each select vocal snippet you listed?"
+
+**Assistant interpretation:** Use the WhisperX transcription timestamps to extract short jingles/clips specifically for each vocal phrase that was detected, not just general beat-aligned clips.
+
+**Inferred user intent:** Get vocal-specific jingles that can be used as emphasis hits, hooks, or transitions with the vocal energy.
+
+**Commit (code):** TBD — "Extract vocal-specific jingles using WhisperX timestamps"
+
+### What I did
+1. **Loaded transcription data**: Parsed lyrics_aligned.json with 5 vocal segments
+2. **Loaded both stems**: vocals.mp3 and no_vocals.mp3 from Demucs output
+3. **Extracted 5 vocal phrases** with precise timestamps:
+   - "YOW!" (17.25s - 18.01s) → 2.3s clip with padding (16.75s - 19.01s)
+   - "SPINNIN' POWER!" (29.83s - 31.04s) → 2.2s clip (29.33s - 31.54s)
+   - "BURNING FAST!" (32.88s - 33.68s) → 2.3s clip (32.38s - 34.68s)
+   - "NO RETREAT UNTIL THE LAST!" (35.78s - 39.42s) → 4.6s clip (35.28s - 39.92s)
+   - "Stress attack...Metal force...Crack" (41.18s - 50.24s) → 10.1s clip (40.67s - 50.74s)
+4. **Created vocal+instrumental pairs**: For each vocal phrase, extracted both stems
+5. **Added fades**: 20ms fade-in, 50ms fade-out for smooth transitions
+6. **Created README**: Documented all 10 jingles with timings and usage suggestions
+
+### Why
+Using transcription timestamps allows extracting jingles specifically at vocal moments, which is more precise than beat-mining for voice-driven content. The vocal+instrumental pairs give flexibility for mixing.
+
+### What worked
+- WhisperX timestamps were accurate and usable for clip extraction
+- 5 distinct vocal moments captured as individual jingles
+- Short clips (2.2-4.6s) work well as stings/hits
+- Longer clip (10.1s) captures full verse+chorus section
+- All 10 files are valid 192kbps MP3s (54K-238KB each)
+- Vocal+inst pairs are sample-accurate (same time ranges)
+
+### What didn't work
+- Last segment merged 2 phrases ("Stress attack..." + "Metal force...") - WhisperX combined them as one segment
+- 10.1s clip is long for a "jingle" but works as a transition bed
+
+### What I learned
+- WhisperX segment-level timestamps are good for phrase-level extraction
+- 0.5s padding before/after vocal is enough context for jingles
+- Short vocal hits (0.8-1.2s) make great stings when padded to 2-2.5s
+- Having both stems allows layering decisions in post-production
+
+### What was tricky to build
+- Needed to handle both very short clips (0.76s phrase) and long phrases (9.07s)
+- Adjusted padding logic: longer padding for short phrases to make them usable
+
+### What warrants a second pair of eyes
+- Check if the fade durations (20ms in, 50ms out) work well for metal vocals
+- Verify the 10.1s clip is useful or if it should be split further
+
+### What should be done in the future
+- Add a script to `jingle_extractor.py` as a new command: `extract-vocal-jingles`
+- Add option to specify padding duration
+- Add option to cross-fade vocal+inst stems for blended jingles
+
+### Code review instructions
+- Review the extraction script logic (inline Python in bash)
+- Check the README.md in out/vocal_jingles/ for completeness
+
+### Technical details
+**Extraction Results:**
+- 5 vocal segments → 5 vocal jingles + 5 instrumental jingles = 10 total
+- Clip durations: 2.2s, 2.3s, 2.3s, 2.3s, 4.6s, 10.1s (varies by phrase length)
+- Total size: ~1.1MB for all 10 jingles
+- Format: 192kbps MP3, 44.1kHz stereo, ID3v2.4 tags
+- Location: `out/vocal_jingles/`
+- Documentation: `out/vocal_jingles/README.md`
