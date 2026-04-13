@@ -1,0 +1,12 @@
+/**
+ * Timeline.css — SVG timeline container (padding only; layers are SVG elements).
+ */
+
+[data-widget='jingle-extractor'] [data-part='timeline'] {
+  padding: var(--je-space-1, 2px);
+  background: var(--je-color-surface, #fff);
+  cursor: crosshair;
+  display: block;
+  width: 100%;
+  height: auto;
+}

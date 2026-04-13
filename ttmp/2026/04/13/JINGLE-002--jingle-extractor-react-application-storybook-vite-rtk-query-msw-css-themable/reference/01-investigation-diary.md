@@ -310,4 +310,43 @@ npm run lint  # ✅ Clean
 
 **Total stories**: 28 across 8 components.
 
-**Status**: Phase 2c complete.
+**Status**: Phase 2d (Timeline) complete. 32 stories across 9 components. Next: Phase 3 — RTK Query + Redux wiring, then integration stories.
+
+---
+
+## Step 10: Phase 2d — Timeline Decomposition
+
+**What changed**: Created the Timeline component decomposed into sub-components.
+
+**Files created**:
+
+| File | Purpose |
+|------|---------|
+| `useTimelineDrag.ts` | Custom hook for SVG pointer drag with capture |
+| `Timeline.tsx` | Main component composing all SVG layers |
+| `Timeline.css` | Container CSS (padding + cursor) |
+| `Timeline.stories.tsx` | 4 stories (default, no selection, no candidates, no vocals) |
+
+**Sub-components within Timeline.tsx**:
+- `BeatGridLayer` — every-4th beat vertical lines
+- `CandidateLayer` — candidate regions with draggable handles + grip lines
+- `VocalLayer` — vocal regions with dithered text labels
+- `WaveformLayer` — RMS energy bars
+- `PlayheadLayer` — vertical line + triangle
+- `GripLines` — 3-bar grip pattern for selected handles
+
+**Key technical decisions**:
+- SVG `viewBox="0 0 1400 210"` — fixed coordinate system, scales via CSS `width: 100%`
+- `xToT()` conversion uses SVG coordinate system, not DOM rect — avoids per-frame rect recalculation
+- `setPointerCapture` preserves drag even when mouse leaves SVG
+- Checker dither pattern defined as SVG `<pattern>` in `<defs>`
+- `useTimelineDrag` accepts `React.PointerEvent<any>` to work from any SVG child element
+
+**Bugs fixed**:
+- `onPointerDown` type mismatch (SVGRectElement vs SVGSVGElement) → used `React.PointerEvent<any>`
+- Unused `isSel` prop in `GripLines` → removed
+- Unused variables in layer components → removed
+
+**Total stories**: 32 across 9 components.
+
+**Status**: Phase 2d complete. All UI components extracted with CSS + stories.

@@ -9,7 +9,7 @@
 - [x] Extract leaf components (ScoreBar, MacWindow, MenuBar)
 - [x] Extract interactive panels (TransportBar, PresetPanel, ConfigEditor)
 - [x] Extract list/detail components (CandidateList, CandidateDetail)
-- [ ] Decompose Timeline into layers (Waveform, Candidates, Vocals, BeatGrid, Playhead, useTimelineDrag)
+- [x] Decompose Timeline into layers (Waveform, Candidates, Vocals, BeatGrid, Playhead, useTimelineDrag)
 - [ ] Wire RTK Query + Redux state management
 - [ ] Create MSW handlers matching API contract
 - [ ] Create 40+ Storybook stories across all components

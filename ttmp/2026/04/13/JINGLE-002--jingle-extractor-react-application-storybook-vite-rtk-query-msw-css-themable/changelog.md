@@ -45,3 +45,8 @@ Phase 2b: TransportBar (4 stories), PresetPanel (3 stories), ConfigEditor (3 sto
 
 Phase 2c: CandidateList (4 stories) + CandidateDetail (3 stories). Uses ScoreBar internally. CandidateList: rank/time/duration/score/badge/preview columns. CandidateDetail: quality breakdown, context panel, export buttons. 28 stories total across 8 components. Fixed parts.ts duplicate keys.
 
+
+## 2026-04-13
+
+Phase 2d: Timeline decomposed into layers (BeatGrid, Candidate, Vocal, Waveform, Playhead) + useTimelineDrag hook + 4 stories. SVG viewBox 1400x210, xToT coordinate conversion, setPointerCapture for smooth drag. 32 stories across 9 components.
+
