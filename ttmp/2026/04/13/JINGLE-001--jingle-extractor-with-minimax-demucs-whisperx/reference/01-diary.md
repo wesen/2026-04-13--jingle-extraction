@@ -103,10 +103,67 @@ Following the spec's one-file Python sketch approach with clean modular function
 - Check CLI argument handling and help text
 - Verify the Makefile targets are useful
 
+## Step 3: Heavy Dependencies Installation & Verification
+
+Installed the heavy ML dependencies (torch, demucs, whisperx) that require significant download time and verification. All dependencies now load correctly and the script passes import and help tests.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Continue with installation of heavy dependencies (demucs, whisperx, torch) and verify everything works together.
+
+**Inferred user intent:** Complete the setup so the tool is ready for actual use.
+
+**Commit (code):** TBD — "Install heavy dependencies: torch, demucs, whisperx"
+
+### What I did
+- Installed torch 2.8.0 (887MB download) and torchaudio 2.8.0
+- Installed demucs 4.0.1 with all dependencies (dora-search, julius, openunmix, etc.)
+- Installed whisperx 3.8.5 with heavy dependencies (pyannote-audio, ctranslate2, transformers, triton, CUDA libraries)
+- Verified script imports correctly: `python -c "import jingle_extractor; print('Import OK')"`
+- Verified CLI help works: `python jingle_extractor.py --help`
+
+### Why
+The heavy dependencies are required for:
+- Demucs: Neural network-based stem separation
+- WhisperX: Speech recognition with word-level alignment (requires torch, transformers, pyannote)
+
+### What worked
+- All imports successful
+- CLI argparse working correctly with 3 subcommands
+- Help text displays properly with examples
+
+### What didn't work
+- N/A
+
+### What I learned
+- whisperx upgrades torch to CUDA-enabled version (nvidia-* packages installed)
+- The total download was ~3GB for all heavy dependencies
+- demucs and whisperx have many transitive dependencies including ML ecosystem packages
+
+### What was tricky to build
+- N/A (installation went smoothly)
+
+### What warrants a second pair of eyes
+- The torch version changed from 2.11.0+cpu to 2.8.0 (with CUDA) - this is expected behavior when installing whisperx which requires specific torch versions
+
+### What should be done in the future
+- Test the script against real MiniMax API with the API key from .envrc
+- Test demucs stem separation on sample audio
+- Test whisperx transcription
+- Test full pipeline end-to-end
+
+### Code review instructions
+- Run `python jingle_extractor.py --help` to verify CLI
+- Check that all imports work in your environment
+
 ### Technical details
-- Dependencies in requirements.txt: requests, numpy, scipy, librosa, soundfile, pydub
-- Heavy dependencies (demucs, whisperx, torch) not yet installed
-- Script tested for import only: `python -c "import jingle_extractor; print('OK')"`
+- All dependencies now installed in .venv/
+- torch 2.8.0 with CUDA 12 support
+- demucs 4.0.1
+- whisperx 3.8.5
+- Verified working: import + CLI help
 
 ### Code review instructions
 - Check ticket structure at ttmp/2026/04/13/JINGLE-001--jingle-extractor-with-minimax-demucs-whisperx/

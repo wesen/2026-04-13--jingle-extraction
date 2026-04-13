@@ -1,1 +1,39 @@
-.envrc
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Output directories
+out/
+outputs/
+*.mp3
+*.wav
+*.mp4
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model downloads (large files)
+*.pt
+*.pth
+*.bin
+*.onnx
+checkpoints/
+pretrained/
