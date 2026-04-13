@@ -255,4 +255,38 @@ npm run lint  # ✅ Clean
 
 **What was tricky**: Storybook 10's `satisfies Story` with `render()` only stories — had to remove composite stories. The fix is to keep stories simple with `args:` props.
 
-**Status**: Phase 2a (ScoreBar, MacWindow, MenuBar) complete. 3 components, 3 CSS files, 3 index.ts, 10 stories total.
+**Status**: Phase 2b (TransportBar, PresetPanel, ConfigEditor) complete. 3 components, 3 CSS files, 3 index.ts, 10 stories. Total: 21 stories across 6 components.
+
+---
+
+## Step 8: Phase 2b — Interactive Panels (TransportBar, PresetPanel, ConfigEditor)
+
+**What changed**: Created 3 interactive panel components with CSS and Storybook stories.
+
+**Files created**:
+
+| Component | Files | Stories |
+|-----------|-------|---------|
+| TransportBar | `TransportBar.tsx`, `TransportBar.css`, `index.ts` | StoppedInst, PlayingVox, AtEnd, AtStart |
+| PresetPanel | `PresetPanel.tsx`, `PresetPanel.css`, `index.ts` | NoSelection, DefaultSelected, ShortStingsSelected |
+| ConfigEditor | `ConfigEditor.tsx`, `ConfigEditor.css`, `index.ts` | DefaultConfig, LongBedsConfig, LoadingState |
+
+**Key patterns applied**:
+- TransportBar: stem toggle with `aria-pressed`, time display, 3 transport buttons
+- PresetPanel: preset buttons with `aria-pressed` state
+- ConfigEditor: JSON textarea with parse validation, error state (dithered bg), disabled Run button when error
+- All with proper ARIA attributes
+
+**Bugs fixed**:
+- `timeDisplayTotal` missing from `parts.ts` → added
+- Storybook 10 `StoryObj<typeof meta>` requires args on all stories → used `_args: any` render pattern with `as Story` cast
+
+**Total stories**: 21 across 6 components (ScoreBar:5, MacWindow:3, MenuBar:3, TransportBar:4, PresetPanel:3, ConfigEditor:3)
+
+**Verification**:
+```bash
+./node_modules/.bin/tsc -b  # ✅ No errors
+./node_modules/.bin/vite build  # ✅ 270KB JS
+```
+
+**Status**: Phase 2b complete. Moving to Phase 2c: CandidateList + CandidateDetail.

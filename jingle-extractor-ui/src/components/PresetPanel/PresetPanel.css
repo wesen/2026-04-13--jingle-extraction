@@ -1,0 +1,34 @@
+/**
+ * PresetPanel.css — Preset selection panel.
+ */
+
+[data-widget='jingle-extractor'] [data-part='preset-list'] {
+  padding: var(--je-space-4, 8px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--je-space-1, 2px);
+}
+
+[data-widget='jingle-extractor'] [data-part='preset-item'] {
+  background: var(--je-color-surface, #fff);
+  color: var(--je-color-text, #000);
+  border: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+  border-radius: var(--je-border-radius, 4px);
+  padding: var(--je-space-1, 2px) var(--je-space-4, 8px);
+  font-size: var(--je-font-size-md, 11px);
+  font-family: var(--je-font-family, monospace);
+  cursor: pointer;
+  text-align: left;
+  font-weight: var(--je-font-weight-normal, 400);
+}
+
+[data-widget='jingle-extractor']
+  [data-part='preset-item'][aria-pressed='true'] {
+  background: var(--je-color-selected, #000);
+  color: var(--je-color-selected-text, #fff);
+  font-weight: var(--je-font-weight-bold, 700);
+}
+
+[data-widget='jingle-extractor'] [data-part='preset-item']:hover:not([aria-pressed='true']) {
+  background: var(--je-color-bg, #c0c0c0);
+}

@@ -95,9 +95,11 @@ export const PARTS = {
   // ── Main panel ─────────────────────────────────────────────────────────
   mainPanel: 'main-panel',
   transportBar: 'transport-bar',
+  transportSpacer: 'transport-spacer',
   stemToggle: 'stem-toggle',
   stemButton: 'stem-button',
   timeDisplay: 'time-display',
+  timeDisplayTotal: 'time-display-total',
   transportControls: 'transport-controls',
   transportBtn: 'transport-btn',
 

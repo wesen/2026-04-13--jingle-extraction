@@ -31,3 +31,12 @@ Phase 2a: Extracted 3 leaf components with CSS + Storybook stories. ScoreBar (5 
 
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/ScoreBar — ScoreBar
 
+
+## 2026-04-13
+
+Phase 2b: TransportBar (4 stories), PresetPanel (3 stories), ConfigEditor (3 stories) + CSS. JSON editor with validation + error state. All with data-part, ARIA, --je-* tokens. Total 21 stories across 6 components. Fixed SB10 StoryObj args requirement.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/TransportBar — TransportBar
+

@@ -1,0 +1,90 @@
+/**
+ * TransportBar.css — Transport bar with stem toggle, time display, and transport controls.
+ */
+
+[data-widget='jingle-extractor'] [data-part='transport-bar'] {
+  display: flex;
+  align-items: center;
+  padding: var(--je-space-2, 4px) var(--je-space-5, 10px);
+  gap: var(--je-space-6, 14px);
+  font-size: var(--je-font-size-md, 11px);
+}
+
+/* Stem toggle group */
+[data-widget='jingle-extractor'] [data-part='stem-toggle'] {
+  display: flex;
+  gap: var(--je-space-1, 2px);
+}
+
+[data-widget='jingle-extractor'] [data-part='stem-button'] {
+  padding: var(--je-space-1, 2px) var(--je-space-3, 6px);
+  background: var(--je-color-surface, #fff);
+  color: var(--je-color-text, #000);
+  border: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+  border-radius: var(--je-border-radius, 4px);
+  font-size: var(--je-font-size-sm, 10px);
+  font-family: var(--je-font-family, monospace);
+  cursor: pointer;
+  font-weight: var(--je-font-weight-normal, 400);
+  transition: none;
+}
+
+[data-widget='jingle-extractor']
+  [data-part='stem-button'][aria-pressed='true'] {
+  background: var(--je-color-selected, #000);
+  color: var(--je-color-selected-text, #fff);
+  font-weight: var(--je-font-weight-bold, 700);
+}
+
+/* Spacer */
+[data-widget='jingle-extractor'] [data-part='transport-spacer'] {
+  flex: 1;
+}
+
+/* Time display */
+[data-widget='jingle-extractor'] [data-part='time-display'] {
+  font-family: var(--je-font-family, monospace);
+  font-size: var(--je-font-size-xxl, 16px);
+  font-weight: var(--je-font-weight-bold, 700);
+  letter-spacing: 1px;
+  color: var(--je-color-text, #000);
+}
+
+[data-widget='jingle-extractor'] [data-part='time-display-total'] {
+  font-size: var(--je-font-size-md, 11px);
+  font-weight: var(--je-font-weight-normal, 400);
+  opacity: 0.5;
+  margin-left: var(--je-space-2, 4px);
+}
+
+/* Transport controls */
+[data-widget='jingle-extractor'] [data-part='transport-controls'] {
+  display: flex;
+  gap: var(--je-space-1, 2px);
+  margin-left: var(--je-space-4, 8px);
+}
+
+[data-widget='jingle-extractor'] [data-part='transport-btn'] {
+  width: var(--je-transport-btn-size, 28px);
+  height: var(--je-transport-btn-size, 28px);
+  background: var(--je-color-surface, #fff);
+  border: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+  border-radius: var(--je-border-radius, 4px);
+  font-size: var(--je-font-size-sm, 10px);
+  cursor: pointer;
+  font-family: var(--je-font-family, monospace);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--je-color-text, #000);
+  padding: 0;
+}
+
+[data-widget='jingle-extractor'] [data-part='transport-btn']:hover {
+  background: var(--je-color-bg, #c0c0c0);
+}
+
+[data-widget='jingle-extractor'] [data-part='transport-btn']:active {
+  background: var(--je-color-selected, #000);
+  color: var(--je-color-selected-text, #fff);
+}
