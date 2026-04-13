@@ -9,6 +9,8 @@ Owners: []
 RelatedFiles:
     - Path: jingle_extractor.py
       Note: Main implementation with generate/analyze/full commands
+    - Path: out/death_metal_clips/death_metal_01_2.0s.mp3
+      Note: Death metal instrumental clip sample
     - Path: out/test/test_tech_01.mp3
       Note: Sample generated MiniMax track
 ExternalSources: []
@@ -17,6 +19,7 @@ LastUpdated: 0001-01-01T00:00:00Z
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
