@@ -13,12 +13,15 @@ RelatedFiles:
       Note: Death metal instrumental clip sample
     - Path: out/test/test_tech_01.mp3
       Note: Sample generated MiniMax track
+    - Path: out/thrash_analysis/lyrics_aligned.json
+      Note: WhisperX transcription with word-level timestamps
 ExternalSources: []
 Summary: ""
 LastUpdated: 0001-01-01T00:00:00Z
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -301,17 +304,84 @@ Cross-genre testing ensures the pipeline is robust. Death metal is extreme oppos
 - Add shorter timeout for transcription with graceful fallback
 - Consider adding a "vocals" vs "no_vocals" clip mining option (currently always uses no_vocals)
 
+## Step 6: Full WhisperX Transcription Success on Thrash Metal
+
+Successfully ran WhisperX to completion on thrash metal vocals. The transcription worked perfectly, detecting aggressive shouting vocals with word-level timestamps. Pipeline now fully validated including vocal transcription path.
+
+### Prompt Context
+
+**User prompt (verbatim):** "extract vocals from thrash_metal, let whisper run full length"
+
+**Assistant interpretation:** Run the complete analyze pipeline on thrash metal including WhisperX transcription (don't skip it), allowing it to run to completion without timeout.
+
+**Inferred user intent:** Verify WhisperX works on thrash metal vocals and produces useful transcription output.
+
+**Commit (code):** TBD — "Verify full WhisperX transcription on thrash metal vocals"
+
+### What I did
+1. **Demucs separation**: Successfully separated thrash_metal_01.mp3 into vocals.mp3 + no_vocals.mp3 (55.6s duration)
+2. **WhisperX transcription**: Ran full length without timeout (downloaded 360MB wav2vec2 alignment model on first run)
+3. **Detected language**: English (0.76 confidence)
+4. **Transcribed lyrics**: 
+   - "YOW!" (17.2s - 18.0s)
+   - "SPINNIN' POWER!" (29.8s - 31.0s)
+   - "BURNING FAST!" (32.9s - 33.7s)
+   - "NO RETREAT UNTIL THE LAST!" (35.8s - 39.4s)
+   - "Stress attack, no turning back" (41.2s - 43.6s)
+   - "Metal force, we will not crack" (44.2s - 47.1s)
+5. **Word-level timestamps**: Each word has precise start/end times (e.g., "BURNING" 32.876s-33.196s, "FAST!" 33.256s-33.677s)
+6. **Rhythm analysis**: 166.7 BPM detected (close to 160 BPM target), 150 beats, 319 onsets
+7. **Clip mining**: 5 clips extracted from no_vocals stem (scores 1.71-1.79, 2.5-4.0s duration)
+8. **Manifest saved**: Complete JSON with stems, lyrics_words, candidates, clips
+
+### Why
+Full pipeline validation including the most computationally expensive component (WhisperX alignment). Thrash metal is challenging for ASR due to aggressive shouting/distortion.
+
+### What worked
+- WhisperX successfully transcribed thrash metal shouting vocals
+- Word-level alignment is precise (0.1-0.5s resolution)
+- Lyrics partially match the prompt (AI interprets the prompt, doesn't follow exactly)
+- 166.7 BPM detected (very close to 160 BPM target in prompt)
+- 5 instrumental clips extracted from no_vocals stem
+- All clips verified as valid 192kbps MP3s
+
+### What didn't work
+- WhisperX required 360MB model download on first run (one-time cost)
+- CPU inference is slow but functional (~15min for 55s track including model download)
+
+### What I learned
+- WhisperX works on aggressive metal vocals (not just clean speech)
+- The wav2vec2 alignment model (360MB) is required for word-level timestamps
+- MiniMax interprets lyrics creatively ("Speed and power" became "SPINNIN' POWER")
+- 55s track processed in ~15min total (2min demucs + 13min whisperx + analysis/export)
+
+### What was tricky to build
+- First run required downloading the 360MB wav2vec2 model - had to wait for it
+- No errors or timeouts - just slow CPU processing
+
+### What warrants a second pair of eyes
+- The transcription quality is good for metal vocals (lowercase scores 0.37-0.99 per word)
+- Some words have low confidence (0.37 for "SPINNIN'") but still intelligible
+
+### What should be done in the future
+- Consider adding a `--device` option for GPU acceleration (would be 10x faster)
+- Add a progress indicator for long WhisperX runs
+- Maybe add a "confidence threshold" filter for lyrics_words in manifest
+
 ### Code review instructions
-- Check the `--instrumental` flag behavior in both `generate` and `full` commands
-- Test: `python jingle_extractor.py generate --prompt "test" --lyrics "test lyrics"` should now include vocals
+- Review the manifest.json structure - is the lyrics_words format useful?
+- Check if word-level timestamps are accurate enough for your use case
 
 ### Technical details
-**Death Metal Test Results:**
-- Input: 70.9s death metal track with growled vocals
-- Stems: vocals.mp3 + no_vocals.mp3 (each ~2.8MB)
-- Detected: 92.3 BPM, 108 beats, 309 onsets
-- Clips: 3 x 2.0s instrumental clips exported
-- WhisperX: Timeout on vocals (CPU too slow for extreme genre)
+**Thrash Metal Full Pipeline Results:**
+- Input: 55.6s thrash metal with aggressive vocals
+- Stems: vocals.mp3 + no_vocals.mp3
+- Transcription: 22 words detected with timestamps
+- Best transcription: "NO RETREAT UNTIL THE LAST!" (35.8s - 39.4s)
+- Rhythm: 166.7 BPM (requested 160 BPM), 150 beats, 319 onsets
+- Clips: 5 x 2.5-4.0s clips from instrumental stem
+- Best clip: 39.1s-43.1s (score 1.79, 4.0s duration)
+- Timing: Demucs 2min, WhisperX 13min (incl 360MB model download), mining/export ~10s
 
 ### Code review instructions
 - Check ticket structure at ttmp/2026/04/13/JINGLE-001--jingle-extractor-with-minimax-demucs-whisperx/

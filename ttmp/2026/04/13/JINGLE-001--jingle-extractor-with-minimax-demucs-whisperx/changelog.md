@@ -27,3 +27,8 @@ Step 4: End-to-end testing successful - MiniMax, Demucs, mining, export all work
 
 Step 5: Death metal genre test with vocals, fixed --instrumental CLI bug (commit d822bc2)
 
+
+## 2026-04-13
+
+Step 6: Full WhisperX transcription on thrash metal - 22 words detected, 5 clips extracted (TBD)
+
