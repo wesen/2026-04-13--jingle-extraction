@@ -56,8 +56,8 @@
 #### Timeline playback integration
 - [x] Make timeline clicks optionally seek active playback rather than only move a static playhead marker
 - [x] Decide whether clicking the timeline should also auto-play from that position or only reposition
-- [ ] Add a test for “click timeline → playhead changes”
-- [ ] Add a test for “play transport → playhead advances over time”
+- [x] Add a test for “click timeline → playhead changes”
+- [x] Add a test for “play transport → playhead advances over time”
 
 #### Stem support
 - [x] Decide whether `orig` should remain a visible stem option in the transport

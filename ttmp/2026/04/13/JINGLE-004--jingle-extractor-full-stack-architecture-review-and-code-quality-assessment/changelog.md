@@ -77,3 +77,13 @@ Implemented the first full playback slice: added a backend stem-audio route, mat
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx — Transport/timeline integration with live playback
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/hooks/useAudioPlayer.ts — Playback controller ownership model and audio event wiring
 
+
+## 2026-04-13
+
+Added the first frontend interaction tests for playback: timeline background clicks now have a component test, and transport playhead advancement now has a JSDOM test using a FakeAudio harness (commit cb07c99).
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx — Timeline click interaction regression test
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/TransportBar/TransportBar.playback.test.tsx — Transport playback/playhead interaction regression test
+

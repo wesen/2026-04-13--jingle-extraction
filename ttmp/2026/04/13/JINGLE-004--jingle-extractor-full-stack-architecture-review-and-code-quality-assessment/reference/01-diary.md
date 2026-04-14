@@ -31,6 +31,10 @@ RelatedFiles:
       Note: Frontend API-layer test coverage added during Step 7
     - Path: jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx
       Note: Validation-time callback fix and root runtime review
+    - Path: jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx
+      Note: Step 11 timeline interaction test
+    - Path: jingle-extractor-ui/src/components/TransportBar/TransportBar.playback.test.tsx
+      Note: Step 11 transport/playhead interaction test
     - Path: jingle-extractor-ui/src/hooks/useAudioPlayer.ts
       Note: |-
         Playback hook validation findings
@@ -43,6 +47,7 @@ LastUpdated: 2026-04-13T21:48:00-04:00
 WhatFor: Capture how the review was performed, what evidence was gathered, what validation passed or failed, and how to continue the investigation later.
 WhenToUse: Use when continuing the JINGLE-004 review, verifying claims in the design doc, or replaying the investigation commands.
 ---
+
 
 
 
@@ -1119,3 +1124,101 @@ Another subtle issue was backward compatibility for existing analyzed tracks. Ne
   - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/hooks/useAudioPlayer.ts`
 - Tasks completed in this step: 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 37, 38, 40
 - Task intentionally left for later in this area: 39 (full preview/export validation across `orig`, `inst`, and `vox` against a live analyzed track)
+
+## Step 11: Add frontend interaction tests for timeline clicks and transport-driven playhead updates
+
+After wiring real playback, I added the first frontend interaction tests that exercise the user-facing behavior rather than just the contract layer. This step covered the two remaining tasks in the immediate playback cluster: one test for clicking the timeline background to move the playhead, and one test for pressing Play in the transport and seeing the visible playhead advance via audio time updates.
+
+I used a lightweight JSDOM + Testing Library setup rather than jumping straight to end-to-end browser automation. That choice keeps the tests fast and focused while still exercising real React components and event wiring.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 7)
+
+**Assistant interpretation:** Continue the playback task cluster by turning the newly implemented transport/timeline behavior into regression-tested frontend interactions.
+
+**Inferred user intent:** The user wants the work to harden as it goes, not just accumulate code changes without behavioral proof.
+
+**Commit (code):** cb07c99 — "test(ui): cover timeline clicks and transport playhead sync"
+
+### What I did
+- Installed frontend test dependencies in `jingle-extractor-ui/package.json`:
+  - `jsdom`
+  - `@testing-library/react`
+  - `@testing-library/user-event`
+- Added `jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx`
+  - verifies clicking the timeline background calls `onPlayheadChange(...)` with the expected time value
+  - stubs `getBoundingClientRect()` so the SVG click math is deterministic in JSDOM
+- Added `jingle-extractor-ui/src/components/TransportBar/TransportBar.playback.test.tsx`
+  - builds a small harness using `TransportBar` + `useAudioPlayer`
+  - replaces the browser `Audio` object with a `FakeAudio` test double
+  - verifies clicking Play and emitting `timeupdate` advances the visible playhead state
+- Ran:
+  ```bash
+  cd jingle-extractor-ui && npx vitest run --config vitest.config.ts src/components/Timeline/Timeline.test.tsx src/components/TransportBar/TransportBar.playback.test.tsx
+  cd jingle-extractor-ui && npm run build
+  cd /home/manuel/code/wesen/2026-04-13--jingle-extraction && python3 -m pytest -q jingle-extractor-backend/tests
+  ```
+
+### Why
+- The playback work was now important enough to deserve regression tests.
+- These two tests cover the main user-visible behavior added in the previous step without requiring a full end-to-end browser harness.
+- Introducing JSDOM/Testing Library now also lays groundwork for the later frontend interaction tasks in the backlog.
+
+### What worked
+- The new Vitest component tests passed.
+- Frontend build still passed after adding the tests and dependencies.
+- Backend tests still passed, confirming the new frontend test setup did not destabilize the full-stack repo.
+- The `FakeAudio` approach made it possible to test playhead advancement deterministically without real media playback.
+
+### What didn't work
+- The first build attempt after adding the transport playback test failed because I imported `vi` but did not use it:
+  ```text
+  src/components/TransportBar/TransportBar.playback.test.tsx(6,32): error TS6133: 'vi' is declared but its value is never read.
+  ```
+- I removed the unused import and re-ran the tests/build successfully.
+
+### What I learned
+- JSDOM + Testing Library is sufficient for a useful first layer of interaction testing in this repo.
+- The timeline click math is very sensitive to DOM geometry, so explicit `getBoundingClientRect()` stubbing is necessary for deterministic tests.
+- A small `FakeAudio` class is enough to validate the playback-controller projection path (`timeupdate` → callback → visible playhead state).
+
+### What was tricky to build
+
+The biggest tricky point was avoiding an overly complicated test harness. It would have been easy to over-invest in a pseudo-browser media stack. Instead, I kept the tests narrow:
+
+- Timeline test checks SVG click-to-time conversion.
+- Transport playback test checks that Play plus `timeupdate` events propagate to visible state.
+
+That keeps the tests resilient and aligned with the actual tasks they are meant to close. The only part that required careful handling was the fake `Audio` implementation, because the hook uses both direct event properties (`ontimeupdate`, `onplay`, etc.) and an explicit `addEventListener('loadedmetadata', ...)` callback.
+
+### What warrants a second pair of eyes
+- Whether the project should eventually standardize on JSDOM component tests plus a smaller number of Playwright end-to-end tests
+- Whether the `FakeAudio` test double should be extracted into a reusable test helper as more playback tests are added
+
+### What should be done in the future
+- Add tests for candidate preview/export buttons now that the testing infrastructure exists
+- Add tests for timeline drag behavior once the candidate edit model is fixed
+- Consider a higher-level integration test around the full `JingleExtractor` widget once the transport + candidate editing semantics are more stable
+
+### Code review instructions
+- Review the new test files:
+  - `jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx`
+  - `jingle-extractor-ui/src/components/TransportBar/TransportBar.playback.test.tsx`
+- Review the package changes in:
+  - `jingle-extractor-ui/package.json`
+  - `jingle-extractor-ui/package-lock.json`
+- Re-run:
+  ```bash
+  cd jingle-extractor-ui && npx vitest run --config vitest.config.ts src/components/Timeline/Timeline.test.tsx src/components/TransportBar/TransportBar.playback.test.tsx
+  cd jingle-extractor-ui && npm run build
+  cd /home/manuel/code/wesen/2026-04-13--jingle-extraction && python3 -m pytest -q jingle-extractor-backend/tests
+  ```
+
+### Technical details
+- Files changed for this step:
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/package.json`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/package-lock.json`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/TransportBar/TransportBar.playback.test.tsx`
+- Tasks completed in this step: 35, 36
