@@ -9,6 +9,7 @@ interface GenerationComposerProps {
   onChange: (value: GenerationComposerValue) => void;
   onGenerate: () => void;
   onSavePrompt?: () => void;
+  onResetDraft?: () => void;
   isGenerating?: boolean;
 }
 
@@ -17,11 +18,19 @@ export function GenerationComposer({
   onChange,
   onGenerate,
   onSavePrompt,
+  onResetDraft,
   isGenerating = false,
 }: GenerationComposerProps) {
   const update = <K extends keyof GenerationComposerValue>(key: K, next: GenerationComposerValue[K]) => {
     onChange({ ...value, [key]: next });
   };
+
+  const promptError = value.prompt.trim().length === 0 ? 'Prompt is required.' : null;
+  const modelError = value.model.trim().length === 0 ? 'Model is required.' : null;
+  const countError = Number.isInteger(value.count) && value.count >= 1 && value.count <= 8
+    ? null
+    : 'Count must be an integer between 1 and 8.';
+  const hasValidationError = !!promptError || !!modelError || !!countError;
 
   return (
     <div data-part={PARTS.generationComposer}>
@@ -36,7 +45,10 @@ export function GenerationComposer({
             value={value.prompt}
             onChange={(e) => update('prompt', e.target.value)}
             spellCheck={false}
+            aria-invalid={!!promptError}
+            aria-describedby={promptError ? 'generation-prompt-error' : undefined}
           />
+          {promptError && <span id="generation-prompt-error" data-part={PARTS.fieldError}>{promptError}</span>}
         </div>
 
         <div data-part={PARTS.fieldGroup}>
@@ -62,7 +74,10 @@ export function GenerationComposer({
             data-part={PARTS.textField}
             value={value.model}
             onChange={(e) => update('model', e.target.value)}
+            aria-invalid={!!modelError}
+            aria-describedby={modelError ? 'generation-model-error' : undefined}
           />
+          {modelError && <span id="generation-model-error" data-part={PARTS.fieldError}>{modelError}</span>}
         </div>
 
         <div data-part={PARTS.fieldGroup}>
@@ -76,8 +91,19 @@ export function GenerationComposer({
             min={1}
             max={8}
             value={value.count}
-            onChange={(e) => update('count', Number(e.target.value) || 1)}
+            onChange={(e) => {
+              const raw = Number(e.target.value);
+              if (Number.isNaN(raw)) {
+                update('count', 1);
+                return;
+              }
+              const clamped = Math.min(8, Math.max(1, Math.round(raw)));
+              update('count', clamped);
+            }}
+            aria-invalid={!!countError}
+            aria-describedby={countError ? 'generation-count-error' : undefined}
           />
+          {countError && <span id="generation-count-error" data-part={PARTS.fieldError}>{countError}</span>}
         </div>
 
         <div data-part={PARTS.fieldGroup}>
@@ -107,12 +133,17 @@ export function GenerationComposer({
       </div>
 
       <div data-part={PARTS.composerActions}>
-        <button data-part={PARTS.btnPrimary} type="button" onClick={onGenerate} disabled={isGenerating}>
+        <button data-part={PARTS.btnPrimary} type="button" onClick={onGenerate} disabled={isGenerating || hasValidationError}>
           {isGenerating ? 'Generating…' : 'Generate batch'}
         </button>
         {onSavePrompt && (
           <button data-part={PARTS.btnSecondary} type="button" onClick={onSavePrompt}>
             Save prompt
+          </button>
+        )}
+        {onResetDraft && (
+          <button data-part={PARTS.btnSecondary} type="button" onClick={onResetDraft}>
+            Reset draft
           </button>
         )}
       </div>

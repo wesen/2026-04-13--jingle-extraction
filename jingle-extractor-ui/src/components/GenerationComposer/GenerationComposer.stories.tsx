@@ -2,8 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import type { GenerationComposerValue } from '../../api/types';
 import { studioComposerFixture } from '../../mocks/fixtures/studio';
-import { MacWindow } from '../MacWindow';
-import { WIDGET } from '../JingleExtractor/parts';
+import { withWidgetWindow } from '../storybook/widgetStoryDecorators';
 import { GenerationComposer } from './GenerationComposer';
 
 const meta = {
@@ -15,20 +14,11 @@ const meta = {
     onChange: () => undefined,
     onGenerate: () => undefined,
     onSavePrompt: () => undefined,
+    onResetDraft: () => undefined,
     isGenerating: false,
   },
   parameters: { layout: 'padded' },
-  decorators: [
-    (Story) => (
-      <div data-widget={WIDGET} data-je-theme="retro" style={{ padding: 8, maxWidth: 760 }}>
-        <MacWindow title="Generate Track Batch">
-          <div style={{ padding: 8 }}>
-            <Story />
-          </div>
-        </MacWindow>
-      </div>
-    ),
-  ],
+  decorators: [withWidgetWindow({ title: 'Generate Track Batch', style: { padding: 8, maxWidth: 760 } })],
 } satisfies Meta<typeof GenerationComposer>;
 
 export default meta;
@@ -49,6 +39,7 @@ function ControlledComposer({
       onChange={setValue}
       onGenerate={() => undefined}
       onSavePrompt={() => undefined}
+      onResetDraft={() => setValue(initialValue)}
       isGenerating={isGenerating}
     />
   );
@@ -73,4 +64,17 @@ export const Instrumental: Story = {
 
 export const Generating: Story = {
   render: () => <ControlledComposer isGenerating />,
+};
+
+export const InvalidDraft: Story = {
+  render: () => (
+    <ControlledComposer
+      initialValue={{
+        ...studioComposerFixture,
+        prompt: '',
+        model: '',
+        count: 0,
+      }}
+    />
+  ),
 };

@@ -21,6 +21,13 @@
   font-family: var(--je-font-family, monospace);
 }
 
+[data-widget='jingle-extractor'] [data-part='field-error'] {
+  font-size: var(--je-font-size-sm, 10px);
+  color: var(--je-color-danger, #8b0000);
+  font-family: var(--je-font-family, monospace);
+  font-weight: var(--je-font-weight-bold, 700);
+}
+
 [data-widget='jingle-extractor'] [data-part='text-field'],
 [data-widget='jingle-extractor'] [data-part='number-field'],
 [data-widget='jingle-extractor'] [data-part='textarea-field'] {
@@ -42,4 +49,10 @@
 
 [data-widget='jingle-extractor'] [data-part='number-field'] {
   text-align: right;
+}
+
+[data-widget='jingle-extractor'] [data-part='text-field'][aria-invalid='true'],
+[data-widget='jingle-extractor'] [data-part='number-field'][aria-invalid='true'],
+[data-widget='jingle-extractor'] [data-part='textarea-field'][aria-invalid='true'] {
+  border-color: var(--je-color-danger, #8b0000);
 }
