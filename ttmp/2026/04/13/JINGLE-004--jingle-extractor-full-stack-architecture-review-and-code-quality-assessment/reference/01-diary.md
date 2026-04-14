@@ -17,6 +17,8 @@ RelatedFiles:
       Note: Repo hygiene cleanup recorded in Step 9
     - Path: jingle-extractor-backend/app/routes/export.py
       Note: Phase 1 export-setting truthfulness implementation from Step 8
+    - Path: jingle-extractor-backend/app/routes/tracks.py
+      Note: Playback stem route and orig fallback implemented in Step 10
     - Path: jingle-extractor-backend/run.py
       Note: Verified startup now honors HOST/PORT/LOG_LEVEL during Step 8
     - Path: jingle-extractor-backend/tests/test_endpoints.py
@@ -30,7 +32,9 @@ RelatedFiles:
     - Path: jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx
       Note: Validation-time callback fix and root runtime review
     - Path: jingle-extractor-ui/src/hooks/useAudioPlayer.ts
-      Note: Playback hook validation findings
+      Note: |-
+        Playback hook validation findings
+        Playback controller refactor and event model implemented in Step 10
     - Path: jingle-extractor-ui/vitest.config.ts
       Note: Minimal Vitest configuration added to run source tests without Storybook include patterns
 ExternalSources: []
@@ -39,6 +43,7 @@ LastUpdated: 2026-04-13T21:48:00-04:00
 WhatFor: Capture how the review was performed, what evidence was gathered, what validation passed or failed, and how to continue the investigation later.
 WhenToUse: Use when continuing the JINGLE-004 review, verifying claims in the design doc, or replaying the investigation commands.
 ---
+
 
 
 
@@ -973,3 +978,144 @@ The main tricky point here was deciding whether to revert or commit the existing
   - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/.storybook/preview.tsx`
   - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/analyze.py`
 - Tasks completed in this step: 17, 18, 19, 20
+
+## Step 10: Build a real playback controller and wire transport to backend-served stems
+
+With Phase 1 complete, I moved into the first major Phase 2 cluster: real playback. The review had identified that the transport bar existed visually but did not actually control audio, and the timeline playhead was only a static marker rather than a live playback cursor. To fix that properly, I needed both a frontend playback controller and a backend path that the browser could actually load as full-track audio.
+
+The implementation decision for this phase was to let `useAudioPlayer` own the live `HTMLAudioElement` lifecycle while Redux continues to store the projected UI cursor state (`playhead`) and user selection state (`stem`). That keeps imperative browser audio control out of Redux while still letting the rest of the UI observe playback progress in a serializable way.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 7)
+
+**Assistant interpretation:** Continue into the next task cluster and replace placeholder playback behavior with real end-to-end audio control.
+
+**Inferred user intent:** The user wants the app to stop behaving like a static mock and start acting like a real audio tool, with transport controls that actually work.
+
+**Commit (code):** 2ce4483 — "feat(playback): wire transport to backend stem audio"
+
+### What I did
+- Added a new backend route in `jingle-extractor-backend/app/routes/tracks.py`:
+  - `GET /api/tracks/{track_id}/audio/{stem}`
+  - returns a full-track stem as a `FileResponse`
+- Added original-audio support in `jingle-extractor-backend/app/pipeline.py`:
+  - materializes `orig.mp3` into the track directory when running the pipeline
+  - copies directly when the source is already MP3
+  - transcodes to MP3 via `pydub` otherwise
+- Added fallback resolution for `orig` in both:
+  - `jingle-extractor-backend/app/routes/tracks.py`
+  - `jingle-extractor-backend/app/routes/export.py`
+  so existing analyzed tracks can still use `original_path` even if `orig.mp3` was not materialized yet
+- Refactored `jingle-extractor-ui/src/hooks/useAudioPlayer.ts` into a clearer playback controller:
+  - explicit ownership model documented in comments
+  - `playClip(...)` for preview clips
+  - `playTrack(...)` for full-track playback
+  - `pause()`, `stop()`, `seekTo()`
+  - event handling for `loadedmetadata`, `timeupdate`, `ended`, `error`, `play`, and `pause`
+- Updated `jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx`:
+  - transport Play now calls `playTrack(...)`
+  - transport Pause now pauses real audio
+  - seek back/forward update both Redux playhead and active audio state
+  - timeline clicks now reposition the active audio if one is loaded
+  - stem changes while playing switch playback to the new stem at the current playhead
+  - `TransportBar.isPlaying` now reflects live audio state instead of a hardcoded `false`
+- Added backend endpoint tests in `jingle-extractor-backend/tests/test_endpoints.py` for:
+  - successful stem file serving
+  - missing-stem 404 behavior
+- Marked playback/stem-support tasks 23–34, 37, 38, and 40 complete
+
+### Why
+- The transport bar could not become real until the browser had an addressable full-track audio source.
+- A full-track route is simpler and more honest than trying to fake long-form playback through repeated clip exports.
+- The hook/controller model keeps audio behavior localized while still letting the rest of the UI react to progress through callbacks.
+- Supporting `orig` mattered because the transport already exposed it as a first-class option.
+
+### What worked
+- Frontend build passed:
+  ```bash
+  cd jingle-extractor-ui && npm run build
+  ```
+- Full backend tests passed after adding the new route tests:
+  ```bash
+  python3 -m pytest -q jingle-extractor-backend/tests
+  ```
+- The new test count increased to 24 passed.
+- The backend test route for stem serving succeeded using temp files and the patched test `DATA_DIR` setup.
+- The playhead wiring is now structurally correct: playback time events can drive the UI instead of the UI inventing time on its own.
+
+### What didn't work
+- My first attempt to “manually validate” the new audio route against the already-running backend on port 8000 was misleading because that server’s current SQLite state did not contain `thrash_metal_01` in `/api/tracks` at that moment. I ran:
+  ```bash
+  curl -s http://localhost:8000/api/tracks
+  ```
+  and got:
+  ```json
+  []
+  ```
+  Then:
+  ```bash
+  curl -s http://localhost:8000/api/tracks/thrash_metal_01/audio/inst
+  ```
+  returned:
+  ```json
+  {"detail":"Track not found: thrash_metal_01"}
+  ```
+- I also initially used `curl -I` against the audio endpoint and got:
+  ```text
+  HTTP/1.1 405 Method Not Allowed
+  allow: GET
+  ```
+  because the endpoint only implements `GET`, not `HEAD`.
+
+### What I learned
+- The route design for full-track audio is straightforward, but manual validation depends heavily on the state of the live backend DB, so backend tests are the more reliable signal here.
+- The playback-controller approach is much easier to reason about once `timeupdate` events are feeding the shared playhead state.
+- Supporting `orig` robustly requires thinking about both newly analyzed tracks and already analyzed tracks that predate the new `orig.mp3` materialization step.
+
+### What was tricky to build
+
+The hard part of this step was not just “playing audio.” It was deciding where playback truth lives. If Redux owned too much, the implementation would become awkward and non-serializable because `HTMLAudioElement` is inherently imperative browser state. If the hook owned everything with no projection outward, the rest of the app would not know where playback is. The solution was a split with clear boundaries:
+
+- hook owns the live audio element,
+- Redux owns the projected cursor state (`playhead`) and user choices,
+- the root widget bridges the two.
+
+Another subtle issue was backward compatibility for existing analyzed tracks. New pipeline runs can now materialize `orig.mp3`, but older tracks might only have `original_path`. Adding fallback resolution in the routes avoids forcing a full re-analysis before transport can work on original audio.
+
+### What warrants a second pair of eyes
+- Whether full-track audio should eventually move behind a dedicated audio/router module rather than living in `tracks.py`
+- Whether `orig` fallback should be centralized in a shared helper instead of duplicated in `tracks.py` and `export.py`
+- Whether the app should preserve paused full-track playback when a preview clip is triggered, instead of stopping current playback entirely
+
+### What should be done in the future
+- Add browser-level interaction tests for transport play/pause and timeline seeking
+- Add explicit validation of preview/export behavior for `orig`, `inst`, and `vox` against a live analyzed track
+- Revisit the candidate-drag behavior next, since timeline seeking is now real but candidate editing is still semantically wrong
+
+### Code review instructions
+- Start with backend support:
+  - `jingle-extractor-backend/app/routes/tracks.py`
+  - `jingle-extractor-backend/app/pipeline.py`
+  - `jingle-extractor-backend/app/routes/export.py`
+- Then review the playback controller:
+  - `jingle-extractor-ui/src/hooks/useAudioPlayer.ts`
+- Finally review the root wiring:
+  - `jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx`
+- Re-run:
+  ```bash
+  cd jingle-extractor-ui && npm run build
+  cd /home/manuel/code/wesen/2026-04-13--jingle-extraction && python3 -m pytest -q jingle-extractor-backend/tests
+  ```
+- If you want to reproduce the manual live-server check, verify first that `/api/tracks` is not empty on the running backend instance.
+
+### Technical details
+- Files changed for this step:
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/pipeline.py`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/export.py`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/tracks.py`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/tests/test_endpoints.py`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/hooks/useAudioPlayer.ts`
+- Tasks completed in this step: 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 37, 38, 40
+- Task intentionally left for later in this area: 39 (full preview/export validation across `orig`, `inst`, and `vox` against a live analyzed track)

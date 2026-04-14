@@ -66,3 +66,14 @@ Finished the remaining Phase 1 hygiene work: ignored generated backend/frontend 
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/.storybook/preview.tsx — Persisted current Storybook Redux wrapper baseline
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/App.tsx — Persisted current App shell rendering the real JingleExtractor widget
 
+
+## 2026-04-13
+
+Implemented the first full playback slice: added a backend stem-audio route, materialized/fell back to original audio for orig playback, refactored the frontend audio hook into a real playback controller, and wired transport play/pause/seek plus timeline seeking into live audio playback (commit 2ce4483).
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/tracks.py — Full-track stem route for browser playback
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx — Transport/timeline integration with live playback
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/hooks/useAudioPlayer.ts — Playback controller ownership model and audio event wiring
+

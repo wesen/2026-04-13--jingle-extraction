@@ -40,30 +40,30 @@
 ### Phase 2 — Playback and transport completion
 
 #### Playback architecture
-- [ ] Decide on the single source of truth for playback state: Redux, controller hook, or hybrid with clear ownership
-- [ ] Document the playback model in code comments or a short reference doc
-- [ ] Refactor `useAudioPlayer` into a clearer playback controller with explicit lifecycle methods
-- [ ] Fix `useAudioPlayer` lint issues around callback ordering and dependencies
-- [ ] Add audio event handling for `loadedmetadata`, `timeupdate`, `ended`, and `error`
+- [x] Decide on the single source of truth for playback state: Redux, controller hook, or hybrid with clear ownership
+- [x] Document the playback model in code comments or a short reference doc
+- [x] Refactor `useAudioPlayer` into a clearer playback controller with explicit lifecycle methods
+- [x] Fix `useAudioPlayer` lint issues around callback ordering and dependencies
+- [x] Add audio event handling for `loadedmetadata`, `timeupdate`, `ended`, and `error`
 
 #### Transport behavior
-- [ ] Wire `TransportBar.onPlay` to real full-track playback
-- [ ] Wire `TransportBar.onPause` to real pause behavior
-- [ ] Wire seek back/forward buttons to both UI state and active audio state
-- [ ] Reflect active playback state in `TransportBar.isPlaying`
-- [ ] Keep the playhead synchronized during playback rather than only on clicks
+- [x] Wire `TransportBar.onPlay` to real full-track playback
+- [x] Wire `TransportBar.onPause` to real pause behavior
+- [x] Wire seek back/forward buttons to both UI state and active audio state
+- [x] Reflect active playback state in `TransportBar.isPlaying`
+- [x] Keep the playhead synchronized during playback rather than only on clicks
 
 #### Timeline playback integration
-- [ ] Make timeline clicks optionally seek active playback rather than only move a static playhead marker
-- [ ] Decide whether clicking the timeline should also auto-play from that position or only reposition
+- [x] Make timeline clicks optionally seek active playback rather than only move a static playhead marker
+- [x] Decide whether clicking the timeline should also auto-play from that position or only reposition
 - [ ] Add a test for “click timeline → playhead changes”
 - [ ] Add a test for “play transport → playhead advances over time”
 
 #### Stem support
-- [ ] Decide whether `orig` should remain a visible stem option in the transport
-- [ ] If yes, ensure the backend materializes or serves an original normalized file for each track
+- [x] Decide whether `orig` should remain a visible stem option in the transport
+- [x] If yes, ensure the backend materializes or serves an original normalized file for each track
 - [ ] Validate preview/export behavior for `orig`, `inst`, and `vox`
-- [ ] Add a backend test for missing-stem behavior and successful stem resolution
+- [x] Add a backend test for missing-stem behavior and successful stem resolution
 
 ### Phase 3 — Candidate editing and timeline semantics
 
