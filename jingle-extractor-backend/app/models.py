@@ -133,8 +133,8 @@ class AnalysisConfig(BaseModel):
                 "nrg_w": 3,
                 "beat_w": 3,
                 "max_cand": 5,
-                "fade_in": 8,
-                "fade_out": 18,
+                "fade_in": 20,
+                "fade_out": 50,
                 "fmt": "mp3",
                 "br": 192,
             }
@@ -160,6 +160,9 @@ class ExportRequest(BaseModel):
     candidateId: int
     stem: StemType
     fmt: ExportFormat
+    fade_in: int = Field(20, ge=0, le=1000)
+    fade_out: int = Field(50, ge=0, le=1000)
+    br: Optional[int] = Field(None, ge=64, le=320)
 
 
 class ExportBatchRequest(BaseModel):
@@ -167,6 +170,9 @@ class ExportBatchRequest(BaseModel):
     candidates: list[int]
     stem: StemType
     fmt: ExportFormat
+    fade_in: int = Field(20, ge=0, le=1000)
+    fade_out: int = Field(50, ge=0, le=1000)
+    br: Optional[int] = Field(None, ge=64, le=320)
 
 
 # ─── Response Models ────────────────────────────────────────────────────────

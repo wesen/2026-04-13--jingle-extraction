@@ -1,9 +1,9 @@
 /**
- * useAudioPlayer.ts — Hook for playing audio clips from the backend export endpoint.
+ * useAudioPlayer.ts — Hook for playing audio clips from the backend.
  *
- * Usage:
- *   const { play, stop, isPlaying, currentUrl } = useAudioPlayer();
- *   play('/api/export', { trackId: 'thrash_metal_01', candidateId: 1, stem: 'inst', fmt: 'mp3' });
+ * Two modes:
+ * 1. Clip preview: fetches a short clip blob from POST /api/export
+ * 2. Full playback: plays a stem file from a seek position
  */
 
 import { useCallback, useRef, useState } from 'react';
@@ -13,22 +13,22 @@ interface ExportParams {
   candidateId: number;
   stem: string;
   fmt: string;
+  fade_in: number;
+  fade_out: number;
+  br: number | null;
 }
 
 export function useAudioPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentUrl, setCurrentUrl] = useState<string | null>(null);
 
-  const play = useCallback(async (endpoint: string, params: ExportParams) => {
+  // ── Clip preview (from export endpoint) ───────────────────────────────
+
+  const playClip = useCallback(async (endpoint: string, params: ExportParams) => {
     // Stop any current playback
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
+    stop();
 
     try {
-      // Fetch the audio blob from the export endpoint
       const resp = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,14 +36,12 @@ export function useAudioPlayer() {
       });
 
       if (!resp.ok) {
-        console.error('Export failed:', resp.status, await resp.text());
+        console.error('Export failed:', resp.status);
         return;
       }
 
       const blob = await resp.blob();
       const url = URL.createObjectURL(blob);
-      setCurrentUrl(url);
-
       const audio = new Audio(url);
       audioRef.current = audio;
 
@@ -55,13 +53,45 @@ export function useAudioPlayer() {
       };
       audio.onerror = () => {
         setIsPlaying(false);
-        console.error('Audio playback error');
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
       };
 
       await audio.play();
     } catch (err) {
-      console.error('Play failed:', err);
+      console.error('Play clip failed:', err);
       setIsPlaying(false);
+    }
+  }, []);
+
+  // ── Play from position (seek existing or create new audio) ────────────
+
+  const playFrom = useCallback((url: string, startTime: number = 0) => {
+    stop();
+
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    audio.currentTime = startTime;
+
+    audio.onplay = () => setIsPlaying(true);
+    audio.onended = () => {
+      setIsPlaying(false);
+      audioRef.current = null;
+    };
+    audio.onerror = () => {
+      setIsPlaying(false);
+      audioRef.current = null;
+    };
+
+    audio.play().catch((err) => {
+      console.error('Play from position failed:', err);
+      setIsPlaying(false);
+    });
+  }, []);
+
+  const seekTo = useCallback((time: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
     }
   }, []);
 
@@ -69,10 +99,17 @@ export function useAudioPlayer() {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      setIsPlaying(false);
       audioRef.current = null;
+    }
+    setIsPlaying(false);
+  }, []);
+
+  const pause = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
     }
   }, []);
 
-  return { play, stop, isPlaying, currentUrl };
+  return { playClip, playFrom, seekTo, stop, pause, isPlaying };
 }

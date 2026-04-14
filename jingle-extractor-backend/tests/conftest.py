@@ -46,8 +46,8 @@ def default_config():
         "nrg_w": 3,
         "beat_w": 3,
         "max_cand": 5,
-        "fade_in": 8,
-        "fade_out": 18,
+        "fade_in": 20,
+        "fade_out": 50,
         "fmt": "mp3",
         "br": 192,
     }

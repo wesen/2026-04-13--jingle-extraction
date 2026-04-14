@@ -17,8 +17,8 @@ const DEFAULT_CONFIG: AnalysisConfig = {
   nrg_w: 3,
   beat_w: 3,
   max_cand: 5,
-  fade_in: 8,
-  fade_out: 18,
+  fade_in: 20,
+  fade_out: 50,
   fmt: 'mp3',
   br: 192,
 };
@@ -33,8 +33,8 @@ const LONG_BEDS_CONFIG: AnalysisConfig = {
   nrg_w: 5,
   beat_w: 4,
   max_cand: 3,
-  fade_in: 50,
-  fade_out: 100,
+  fade_in: 20,
+  fade_out: 50,
   fmt: 'wav',
   br: null,
 };

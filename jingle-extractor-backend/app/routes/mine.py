@@ -74,6 +74,8 @@ async def mine(request: MineRequest):
 
             overlap = check_vocal_overlap(float(start), end, vocal_segments)
 
+            if overall < config.min_score:
+                continue
             if config.vocal_mode == "inst" and overlap:
                 continue
             if config.vocal_mode == "vocal" and not overlap:

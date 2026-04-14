@@ -3,11 +3,13 @@
 
 import uvicorn
 
+from app.config import HOST, LOG_LEVEL, PORT
+
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
-        host="0.0.0.0",
-        port=8000,
+        host=HOST,
+        port=PORT,
         reload=True,
-        log_level="info",
+        log_level=LOG_LEVEL.lower(),
     )

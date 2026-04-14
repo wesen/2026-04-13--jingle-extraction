@@ -144,10 +144,13 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
         trackId,
         candidateId: cand.id,
         stem,
-        fmt: 'mp3',
+        fmt: config.fmt,
+        fade_in: config.fade_in,
+        fade_out: config.fade_out,
+        br: config.br,
       });
     },
-    [audioPlayer, candidates, trackId, stem]
+    [audioPlayer, candidates, config.br, config.fade_in, config.fade_out, config.fmt, trackId, stem]
   );
 
   const handleExport = useCallback(
@@ -159,7 +162,10 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
           trackId,
           candidateId: cand.id,
           stem,
-          fmt: 'mp3',
+          fmt: config.fmt,
+          fade_in: config.fade_in,
+          fade_out: config.fade_out,
+          br: config.br,
         }).unwrap();
         const url = URL.createObjectURL(blob as Blob);
         const a = document.createElement('a');
@@ -171,7 +177,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
         console.error('Export failed:', e);
       }
     },
-    [exportClip, candidates, trackId, stem]
+    [config.br, config.fade_in, config.fade_out, config.fmt, exportClip, candidates, trackId, stem]
   );
 
   return (

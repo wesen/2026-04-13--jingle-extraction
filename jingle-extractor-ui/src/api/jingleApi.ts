@@ -31,6 +31,9 @@ export interface ExportRequest {
   candidateId: number;
   stem: StemType;
   fmt: ExportFormat;
+  fade_in: number;
+  fade_out: number;
+  br: number | null;
 }
 
 export interface ExportBatchRequest {
@@ -38,6 +41,9 @@ export interface ExportBatchRequest {
   candidates: number[];
   stem: StemType;
   fmt: ExportFormat;
+  fade_in: number;
+  fade_out: number;
+  br: number | null;
 }
 
 // ─── API definition ─────────────────────────────────────────────────────────

@@ -13,18 +13,27 @@ from app.models import ExportBatchRequest, ExportRequest
 router = APIRouter()
 
 
-def _render_clip(audio, start_time: float, end_time: float, fmt: str) -> bytes:
+def _render_clip(
+    audio,
+    start_time: float,
+    end_time: float,
+    fmt: str,
+    fade_in: int = 20,
+    fade_out: int = 50,
+    br: int | None = None,
+) -> bytes:
     """Slice audio, apply fades, encode to bytes."""
     from pydub import AudioSegment
 
     start_ms = int(start_time * 1000)
     end_ms = int(end_time * 1000)
     clip = audio[start_ms:end_ms]
-    clip = clip.fade_in(20).fade_out(50)
+    clip = clip.fade_in(fade_in).fade_out(fade_out)
 
     buf = io.BytesIO()
     if fmt == "mp3":
-        clip.export(buf, format="mp3", bitrate="192k")
+        bitrate = f"{br}k" if br is not None else "192k"
+        clip.export(buf, format="mp3", bitrate=bitrate)
     else:
         clip.export(buf, format="wav")
     return buf.getvalue()
@@ -51,7 +60,15 @@ async def export_clip(request: ExportRequest):
 
     audio = AudioSegment.from_file(str(spath))
     fmt = request.fmt.value
-    clip_bytes = _render_clip(audio, cand["start_time"], cand["end_time"], fmt)
+    clip_bytes = _render_clip(
+        audio,
+        cand["start_time"],
+        cand["end_time"],
+        fmt,
+        fade_in=request.fade_in,
+        fade_out=request.fade_out,
+        br=request.br,
+    )
 
     mime = "audio/mpeg" if fmt == "mp3" else "audio/wav"
     ext = fmt
@@ -89,7 +106,15 @@ async def export_batch(request: ExportBatchRequest):
             if not cand:
                 continue
 
-            clip_bytes = _render_clip(audio, cand["start_time"], cand["end_time"], fmt)
+            clip_bytes = _render_clip(
+                audio,
+                cand["start_time"],
+                cand["end_time"],
+                fmt,
+                fade_in=request.fade_in,
+                fade_out=request.fade_out,
+                br=request.br,
+            )
             zf.writestr(f"clip_{cand_id:02d}.{ext}", clip_bytes)
 
     buffer.seek(0)
