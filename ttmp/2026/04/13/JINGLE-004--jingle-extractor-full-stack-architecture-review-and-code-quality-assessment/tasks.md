@@ -28,10 +28,10 @@
 - [x] N/A — chose to keep fades configurable and make export honor them end to end
 
 #### Repo hygiene
-- [ ] Add `storybook-static/` to `.gitignore`
-- [ ] Add backend runtime `data/` to `.gitignore`
-- [ ] Remove generated artifacts currently polluting lint/review status
-- [ ] Ensure the repo has a clean `git status` after build/storybook/test workflows
+- [x] Add `storybook-static/` to `.gitignore`
+- [x] Add backend runtime `data/` to `.gitignore`
+- [x] Remove generated artifacts currently polluting lint/review status
+- [x] Ensure the repo has a clean `git status` after build/storybook/test workflows
 
 #### Runtime config consistency
 - [x] Update `jingle-extractor-backend/run.py` to read host/port/log level from `app.config`

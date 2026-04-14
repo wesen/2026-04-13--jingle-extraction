@@ -13,12 +13,16 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: .gitignore
+      Note: Repo hygiene cleanup recorded in Step 9
     - Path: jingle-extractor-backend/app/routes/export.py
       Note: Phase 1 export-setting truthfulness implementation from Step 8
     - Path: jingle-extractor-backend/run.py
       Note: Verified startup now honors HOST/PORT/LOG_LEVEL during Step 8
     - Path: jingle-extractor-backend/tests/test_endpoints.py
       Note: Backend validation evidence
+    - Path: jingle-extractor-ui/.storybook/main.ts
+      Note: Storybook static public setup persisted during hygiene cleanup
     - Path: jingle-extractor-ui/.storybook/preview.tsx
       Note: Lint failure evidence for Storybook configuration
     - Path: jingle-extractor-ui/src/api/jingleApi.test.ts
@@ -35,6 +39,7 @@ LastUpdated: 2026-04-13T21:48:00-04:00
 WhatFor: Capture how the review was performed, what evidence was gathered, what validation passed or failed, and how to continue the investigation later.
 WhenToUse: Use when continuing the JINGLE-004 review, verifying claims in the design doc, or replaying the investigation commands.
 ---
+
 
 
 
@@ -876,3 +881,95 @@ The other tricky part was deciding how much default normalization to do. The exi
   - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/utils/constants.ts`
 - Tasks completed in this step: 10, 11, 12, 14, 15, 21, 22
 - Tasks explicitly resolved as N/A by decision: 13, 16
+
+## Step 9: Clean repo hygiene, ignore generated artifacts, and get back to a clean working tree
+
+With the contract and config-truthfulness fixes committed, I finished the remaining Phase 1 hygiene work. This step was partly about new changes and partly about eliminating lingering repository noise: generated output directories were not ignored, and a few legitimate tracked source changes from the current UI shell/Storybook setup were still sitting uncommitted. Until those were resolved, the repository could not reach a clean post-build state.
+
+The goal of this step was simple: after normal frontend/backend workflows, `git status` should be clean instead of cluttered by generated artifacts or long-lived local modifications.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 7)
+
+**Assistant interpretation:** Continue walking the backlog in order and make the repository healthier after each implementation slice, not just functionally more correct.
+
+**Inferred user intent:** The user wants disciplined progress where each phase leaves the repo in a reviewable, committable state.
+
+**Commit (code):** b5d4d94 — "chore(repo): ignore generated artifacts and persist current ui shell"
+
+### What I did
+- Updated `.gitignore` to ignore:
+  - `jingle-extractor-ui/storybook-static/`
+  - `jingle-extractor-backend/data/`
+- Removed generated working-tree artifacts:
+  ```bash
+  rm -rf jingle-extractor-ui/storybook-static jingle-extractor-backend/data
+  ```
+- Committed the current tracked UI-shell/Storybook changes that were already part of the real working baseline:
+  - `jingle-extractor-ui/src/App.tsx`
+  - `jingle-extractor-ui/.storybook/main.ts`
+  - `jingle-extractor-ui/.storybook/preview.tsx`
+  - `jingle-extractor-backend/app/routes/analyze.py`
+- Re-ran validation workflows:
+  ```bash
+  cd jingle-extractor-ui && npm run build
+  cd jingle-extractor-ui && npm run build-storybook
+  python3 -m pytest -q jingle-extractor-backend/tests
+  ```
+- Confirmed the working tree was clean afterward:
+  ```bash
+  git status --short
+  ```
+
+### Why
+- Generated artifacts should not pollute review or lint status.
+- A long-lived dirty working tree makes it harder to see the *next* real change.
+- The current App/Storybook shell changes were clearly intended baseline behavior and needed to be brought into version control instead of remaining accidental local drift.
+
+### What worked
+- Frontend production build passed.
+- Storybook production build passed and regenerated `storybook-static/`, which remained ignored as intended.
+- Backend tests passed.
+- `git status --short` returned clean after the commit.
+
+### What didn't work
+- Nothing new failed in this step, but it did reveal that some important baseline UI/Storybook work had been left uncommitted earlier. That was not a code bug, but it was a repository hygiene problem.
+
+### What I learned
+- Repo hygiene work is not glamorous, but it has a disproportionate effect on development speed because it reduces ambient confusion.
+- Getting back to a clean working tree before starting the next feature cluster is worth doing, especially in a project with multiple ongoing frontend/backend changes.
+- Storybook build output is a classic source of accidental repo noise; ignoring it explicitly removes a lot of friction.
+
+### What was tricky to build
+
+The main tricky point here was deciding whether to revert or commit the existing tracked modifications in `App.tsx` and Storybook configuration. Reverting them would have moved the repository backward toward an older placeholder shell, which was clearly not the intended state of the application. Committing them as part of the hygiene pass was the right call because it restored honesty between the working tree and the actual current app baseline.
+
+### What warrants a second pair of eyes
+- Whether any additional generated artifacts should be ignored more explicitly in the future
+- Whether Storybook configuration cleanup should be split further in the later Storybook-specific tasks, or whether the current baseline is already good enough structurally
+
+### What should be done in the future
+- Keep the habit of checking `git status` after each build/test/storybook workflow cluster
+- Follow up with the later Storybook lint/import cleanup tasks so repository hygiene also includes clean lint output, not just ignored artifacts
+
+### Code review instructions
+- Review `.gitignore` first
+- Confirm the current App shell and Storybook files now live in source control
+- Re-run:
+  ```bash
+  cd jingle-extractor-ui && npm run build
+  cd jingle-extractor-ui && npm run build-storybook
+  cd /home/manuel/code/wesen/2026-04-13--jingle-extraction && python3 -m pytest -q jingle-extractor-backend/tests
+  git status --short
+  ```
+- The important success criterion is that the final `git status --short` output is empty.
+
+### Technical details
+- Files committed in this step:
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/.gitignore`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/App.tsx`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/.storybook/main.ts`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/.storybook/preview.tsx`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/analyze.py`
+- Tasks completed in this step: 17, 18, 19, 20
