@@ -1,0 +1,45 @@
+/** Shared form-field styles (scoped to widget root). */
+
+[data-widget='jingle-extractor'] [data-part='field-group'] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--je-space-2, 4px);
+  min-width: 0;
+}
+
+[data-widget='jingle-extractor'] [data-part='field-label'] {
+  font-size: var(--je-font-size-sm, 10px);
+  font-weight: var(--je-font-weight-bold, 700);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-family: var(--je-font-family, monospace);
+}
+
+[data-widget='jingle-extractor'] [data-part='field-hint'] {
+  font-size: var(--je-font-size-sm, 10px);
+  color: var(--je-color-text-muted, rgba(0, 0, 0, 0.6));
+  font-family: var(--je-font-family, monospace);
+}
+
+[data-widget='jingle-extractor'] [data-part='text-field'],
+[data-widget='jingle-extractor'] [data-part='number-field'],
+[data-widget='jingle-extractor'] [data-part='textarea-field'] {
+  width: 100%;
+  border: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+  border-radius: var(--je-radius-lg, 6px);
+  background: var(--je-color-surface, #fff);
+  color: var(--je-color-text, #000);
+  font-family: var(--je-font-family, monospace);
+  font-size: var(--je-font-size-md, 11px);
+  padding: var(--je-space-3, 6px) var(--je-space-3, 6px);
+  outline: none;
+}
+
+[data-widget='jingle-extractor'] [data-part='textarea-field'] {
+  min-height: 80px;
+  resize: vertical;
+}
+
+[data-widget='jingle-extractor'] [data-part='number-field'] {
+  text-align: right;
+}

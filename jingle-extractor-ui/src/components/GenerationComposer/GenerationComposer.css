@@ -1,0 +1,21 @@
+[data-widget='jingle-extractor'] [data-part='generation-composer'] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--je-space-4, 8px);
+}
+
+[data-widget='jingle-extractor'] [data-part='composer-grid'] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--je-space-4, 8px);
+}
+
+[data-widget='jingle-extractor'] [data-part='composer-grid'] > [data-part='field-group']:first-child,
+[data-widget='jingle-extractor'] [data-part='composer-grid'] > [data-part='field-group']:nth-child(2) {
+  grid-column: 1 / -1;
+}
+
+[data-widget='jingle-extractor'] [data-part='composer-actions'] {
+  display: flex;
+  gap: var(--je-space-2, 4px);
+}

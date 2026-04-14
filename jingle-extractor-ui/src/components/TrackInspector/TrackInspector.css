@@ -1,0 +1,12 @@
+[data-widget='jingle-extractor'] [data-part='track-inspector'] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--je-space-4, 8px);
+}
+
+[data-widget='jingle-extractor'] [data-part='track-inspector-summary'] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--je-space-3, 6px);
+}

@@ -1,0 +1,12 @@
+[data-widget='jingle-extractor'] [data-part='track-library-list'] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--je-space-4, 8px);
+}
+
+[data-widget='jingle-extractor'] [data-part='library-toolbar'] {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.3fr) 120px 120px;
+  gap: var(--je-space-3, 6px);
+  align-items: end;
+}

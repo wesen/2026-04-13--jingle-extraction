@@ -131,6 +131,57 @@ export function isAnalysisCompleteResponse(
   return !!value && 'track' in value;
 }
 
+// ─── Studio / Generation ─────────────────────────────────────────────────────
+
+export type StudioScreen = 'studio' | 'mining';
+export type GenerationMode = 'vocal' | 'instrumental';
+export type GenerationRunStatus = 'queued' | 'generating' | 'complete' | 'partial_failed' | 'failed';
+export type TrackSourceType = 'generated' | 'imported';
+export type TrackGenerationStatus = 'queued' | 'generating' | 'generated' | 'failed';
+export type TrackDecision = 'pending' | 'keep' | 'reject';
+export type TrackAnalysisStatus = AnalysisStatus | 'not_started';
+export type LibrarySourceFilter = 'all' | TrackSourceType;
+export type LibraryStatusFilter = 'all' | 'pending' | 'generated' | 'analyzed' | 'failed';
+export type LibrarySort = 'newest' | 'oldest' | 'name';
+
+export interface GenerationComposerValue {
+  prompt: string;
+  lyrics: string;
+  model: string;
+  count: number;
+  mode: GenerationMode;
+  namingPrefix: string;
+}
+
+export interface GenerationRunSummary {
+  id: string;
+  name: string;
+  prompt: string;
+  lyrics?: string | null;
+  model: string;
+  mode: GenerationMode;
+  countRequested: number;
+  countCompleted: number;
+  status: GenerationRunStatus;
+  createdAt?: string;
+}
+
+export interface TrackLibraryItem {
+  id: string;
+  display_name: string;
+  duration: number | null;
+  source_type: TrackSourceType;
+  generation_run_id?: string | null;
+  variant_index?: number | null;
+  generation_status?: TrackGenerationStatus | null;
+  analysis_status?: TrackAnalysisStatus | null;
+  prompt_snapshot?: string | null;
+  lyrics_snapshot?: string | null;
+  instrumental_requested?: boolean | null;
+  minimax_model?: string | null;
+  decision?: TrackDecision | null;
+}
+
 // ─── Stem / Audio ────────────────────────────────────────────────────────────
 
 export type StemType = 'orig' | 'inst' | 'vox';

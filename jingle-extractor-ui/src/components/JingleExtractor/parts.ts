@@ -29,6 +29,10 @@ export const PARTS = {
   mainLayout: 'main-layout',
   mainPanel: 'main-panel',
   bottomPanel: 'bottom-panel',
+  studioScreen: 'studio-screen',
+  studioLayout: 'studio-layout',
+  studioColumn: 'studio-column',
+  studioWindowStack: 'studio-window-stack',
 
   // ── Preset panel ────────────────────────────────────────────────────────
   presetPanel: 'preset-panel',
@@ -154,6 +158,21 @@ export const PARTS = {
   statusBadge: 'status-badge',
   sourceBadge: 'source-badge',
   keepBadge: 'keep-badge',
+
+  // ── Studio widgets ─────────────────────────────────────────────────────
+  generationComposer: 'generation-composer',
+  composerGrid: 'composer-grid',
+  composerActions: 'composer-actions',
+  fieldHint: 'field-hint',
+  libraryToolbar: 'library-toolbar',
+  trackInspector: 'track-inspector',
+  trackInspectorSummary: 'track-inspector-summary',
+  trackResultsList: 'track-results-list',
+  trackLibraryList: 'track-library-list',
+  runSummaryBar: 'run-summary-bar',
+  runSummaryMetric: 'run-summary-metric',
+  runSummaryLabel: 'run-summary-label',
+  runSummaryValue: 'run-summary-value',
 } as const;
 
 export type PartName = (typeof PARTS)[keyof typeof PARTS];

@@ -6,6 +6,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { jingleApi } from '../api/jingleApi';
 import { analysisSlice } from '../features/analysis/analysisSlice';
 import { audioSlice } from '../features/audio/audioSlice';
+import { studioSlice } from '../features/studio/studioSlice';
 
 export const store = configureStore({
   reducer: {
@@ -15,6 +16,7 @@ export const store = configureStore({
     // Local UI state slices
     analysis: analysisSlice.reducer,
     audio: audioSlice.reducer,
+    studio: studioSlice.reducer,
   },
   // RTK Query needs custom middleware to handle cache expiration
   middleware: (getDefaultMiddleware) =>

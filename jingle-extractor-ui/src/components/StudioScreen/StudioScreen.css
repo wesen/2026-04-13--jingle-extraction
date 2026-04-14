@@ -1,0 +1,27 @@
+[data-widget='jingle-extractor'] [data-part='studio-screen'] {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-widget='jingle-extractor'] [data-part='studio-layout'] {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.42fr) minmax(480px, 0.58fr);
+  gap: var(--je-space-4, 8px);
+  padding: var(--je-space-4, 8px);
+  align-items: start;
+  flex: 1;
+}
+
+[data-widget='jingle-extractor'] [data-part='studio-column'] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--je-space-4, 8px);
+  min-width: 0;
+}
+
+[data-widget='jingle-extractor'] [data-part='studio-window-stack'] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--je-space-4, 8px);
+}

@@ -34,9 +34,9 @@ import { PARTS } from '../JingleExtractor/parts';
 import '../shared/index.css';
 import './DataList.css';
 
-export interface ColumnDef<_T = unknown> {
+export interface ColumnDef<T = unknown> {
   /** Unique key — also used as data-part suffix for the cell */
-  key: string;
+  key: keyof T | string;
   /** Column header label (hidden for icon/badge columns) */
   label?: string;
   /** CSS grid width value (e.g. '22px', '1fr', 'minmax(0, 1fr)') */
@@ -129,9 +129,9 @@ export function DataList<T extends { id: string | number }>({
           >
             {columns.map((col) => (
               <div
-                key={col.key}
+                key={String(col.key)}
                 data-part={PARTS.dataListCell}
-                data-col-key={col.key}
+                data-col-key={String(col.key)}
                 data-align={col.align ?? 'left'}
                 data-is-action={col.isAction ? 'true' : undefined}
                 style={{ textAlign: col.align ?? 'left' }}
