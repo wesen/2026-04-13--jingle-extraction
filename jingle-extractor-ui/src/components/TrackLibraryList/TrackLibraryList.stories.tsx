@@ -2,8 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo, useState } from 'react';
 import type { LibrarySort, LibrarySourceFilter, LibraryStatusFilter, TrackLibraryItem } from '../../api/types';
 import { libraryTracksFixture } from '../../mocks/fixtures/studio';
-import { MacWindow } from '../MacWindow';
-import { WIDGET } from '../JingleExtractor/parts';
+import { withWidgetWindow } from '../storybook/widgetStoryDecorators';
 import { TrackLibraryList } from './TrackLibraryList';
 
 const meta = {
@@ -27,17 +26,7 @@ const meta = {
     onAnalyze: () => undefined,
   },
   parameters: { layout: 'padded' },
-  decorators: [
-    (Story) => (
-      <div data-widget={WIDGET} data-je-theme="retro" style={{ padding: 8, maxWidth: 820 }}>
-        <MacWindow title="Library">
-          <div style={{ padding: 8 }}>
-            <Story />
-          </div>
-        </MacWindow>
-      </div>
-    ),
-  ],
+  decorators: [withWidgetWindow({ title: 'Library', style: { padding: 8, maxWidth: 820 } })],
 } satisfies Meta<typeof TrackLibraryList>;
 
 export default meta;

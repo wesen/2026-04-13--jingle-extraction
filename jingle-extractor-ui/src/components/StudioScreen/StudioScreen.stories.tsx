@@ -13,7 +13,7 @@ import {
   libraryTracksFixture,
   studioComposerFixture,
 } from '../../mocks/fixtures/studio';
-import { WIDGET } from '../JingleExtractor/parts';
+import { withWidgetRoot } from '../storybook/widgetStoryDecorators';
 import { StudioScreen } from './StudioScreen';
 
 const meta = {
@@ -45,13 +45,7 @@ const meta = {
     onOpenInMining: () => undefined,
   },
   parameters: { layout: 'fullscreen' },
-  decorators: [
-    (Story) => (
-      <div data-widget={WIDGET} data-je-theme="retro">
-        <Story />
-      </div>
-    ),
-  ],
+  decorators: [withWidgetRoot()],
 } satisfies Meta<typeof StudioScreen>;
 
 export default meta;

@@ -2,8 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState, type ComponentProps } from 'react';
 import type { TrackLibraryItem } from '../../api/types';
 import { currentRunFixture, currentRunTracksFixture } from '../../mocks/fixtures/studio';
-import { MacWindow } from '../MacWindow';
-import { WIDGET } from '../JingleExtractor/parts';
+import { withWidgetWindow } from '../storybook/widgetStoryDecorators';
 import { TrackResultsList } from './TrackResultsList';
 
 const meta = {
@@ -20,17 +19,7 @@ const meta = {
     onAnalyze: () => undefined,
   },
   parameters: { layout: 'padded' },
-  decorators: [
-    (Story) => (
-      <div data-widget={WIDGET} data-je-theme="retro" style={{ padding: 8, maxWidth: 720 }}>
-        <MacWindow title="Current Run / Results">
-          <div style={{ padding: 8 }}>
-            <Story />
-          </div>
-        </MacWindow>
-      </div>
-    ),
-  ],
+  decorators: [withWidgetWindow({ title: 'Current Run / Results', style: { padding: 8, maxWidth: 720 } })],
 } satisfies Meta<typeof TrackResultsList>;
 
 export default meta;

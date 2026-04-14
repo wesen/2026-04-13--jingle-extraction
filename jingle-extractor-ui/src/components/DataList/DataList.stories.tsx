@@ -10,7 +10,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { DataList, type ColumnDef } from './DataList';
-import { PARTS, WIDGET } from '../JingleExtractor/parts';
+import { PARTS } from '../JingleExtractor/parts';
+import { withWidgetRoot } from '../storybook/widgetStoryDecorators';
 
 // ── Mock data ────────────────────────────────────────────────────────────────
 
@@ -125,13 +126,7 @@ const meta = {
   parameters: {
     layout: 'padded',
   },
-  decorators: [
-    (Story) => (
-      <div data-widget={WIDGET} data-je-theme="retro" style={{ padding: 8 }}>
-        <Story />
-      </div>
-    ),
-  ],
+  decorators: [withWidgetRoot({ style: { padding: 8 } })],
 } satisfies Meta<typeof DataList>;
 
 export default meta;
