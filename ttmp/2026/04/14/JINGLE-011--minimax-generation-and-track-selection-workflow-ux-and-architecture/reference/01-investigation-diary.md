@@ -24,7 +24,7 @@ RelatedFiles:
       Note: Investigated creator-oriented output framing for UX guidance
 ExternalSources: []
 Summary: Chronological research diary for the MiniMax generation and track selection design ticket.
-LastUpdated: 2026-04-14T22:52:00-04:00
+LastUpdated: 2026-04-14T23:06:00-04:00
 WhatFor: Capture the investigation process, evidence collection, and delivery steps for JINGLE-011.
 WhenToUse: Use when reviewing how the design was assembled or continuing the research/implementation stream later.
 ---
@@ -362,4 +362,89 @@ npm run build
 # /iframe.html?id=jingleextractor-datalist--candidate-list-parity
 # /iframe.html?id=jingleextractor-candidatelist--none-selected
 ```
+
+## Step 4: Continue extraction by integrating SegmentedControl into existing widgets without visual drift
+
+After stabilizing DataList and restoring parity baselines, I moved to the next safe extraction target: segmented toggles. Instead of replacing styles wholesale, I integrated the primitive into already-shipped widgets using compatibility `data-part` overrides. This preserves runtime visuals, existing CSS selectors, and test assumptions while reducing duplicate toggle markup.
+
+This step intentionally avoided any “new look.” The goal was structural reuse only. I verified parity via targeted Storybook captures and existing unit tests before committing.
+
+### Prompt Context
+
+**User prompt (verbatim):** "alright, let's continue."
+
+**Assistant interpretation:** Proceed with the next extraction slice while keeping quality high and avoiding regressions.
+
+**Inferred user intent:** Keep momentum after cleanup, but only with disciplined, low-risk refactors.
+
+**Commit (code):** 427bbd0 — "refactor(ui): adopt SegmentedControl in TransportBar and ConfigEditor"
+
+### What I did
+- Extended `SegmentedControl` with compatibility props:
+  - `rootPart?: string`
+  - `buttonPart?: string`
+- Refactored `TransportBar` to use `SegmentedControl` for stem toggle while preserving legacy parts:
+  - `rootPart={PARTS.stemToggle}`
+  - `buttonPart={PARTS.stemButton}`
+- Refactored `ConfigEditor` strategy toggle to use `SegmentedControl` similarly:
+  - `rootPart={PARTS.configStrategyRow}`
+  - `buttonPart={PARTS.configStrategyButton}`
+- Validated:
+  - `npm run build`
+  - `npx vitest run src/components/TransportBar/TransportBar.playback.test.tsx src/components/ConfigEditor/ConfigEditor.strategy.test.tsx`
+  - Storybook visual checks for `TransportBar` and `ConfigEditor`
+
+### Why
+- These two widgets contained duplicated segmented-toggle logic and were ideal low-risk extraction points.
+- Compatibility `data-part` overrides let us reuse behavior without changing visual contracts.
+- This gives immediate design-system reuse value with minimal blast radius.
+
+### What worked
+- Existing tests passed without updates, confirming behavior parity.
+- Storybook views showed unchanged appearance for both widgets.
+- The primitive now supports incremental migration paths for other toggles.
+
+### What didn't work
+- One Storybook screenshot was captured while the iframe was still loading (spinner only). Re-capturing after a one-second wait and snapshot check resolved it.
+- There was repeated shell friction from running npm commands in the repo root instead of `jingle-extractor-ui`; corrected by explicit `cd` before each build/test call.
+
+### What I learned
+- Compatibility `data-part` mapping is the safest extraction strategy in this codebase.
+- Extraction succeeds fastest when we separate “structural reuse” from “visual redesign.”
+
+### What was tricky to build
+- The tricky part was preserving strict styling contracts while introducing a generic primitive. Without `rootPart/buttonPart` overrides, we would have had to modify CSS selectors and risk broad regressions.
+- Another subtle constraint: stories and tests rely on stable aria/data-part behavior, so the primitive needed to preserve these semantics.
+
+### What warrants a second pair of eyes
+- Whether compatibility props on primitives should stay long-term or be phased out after full migration.
+- Whether to add a lint/custom rule that encourages primitive reuse for segmented toggles going forward.
+
+### What should be done in the future
+- Next migration slice: replace `CandidateList` internals with `DataList` behind parity stories.
+- Add visual snapshot assertions for parity stories in CI.
+- Introduce a shared Storybook widget decorator helper to avoid repeated wrapper boilerplate.
+
+### Code review instructions
+- Review these files first:
+  - `jingle-extractor-ui/src/components/SegmentedControl/SegmentedControl.tsx`
+  - `jingle-extractor-ui/src/components/TransportBar/TransportBar.tsx`
+  - `jingle-extractor-ui/src/components/ConfigEditor/ConfigEditor.tsx`
+- Validate behavior:
+  - click stem toggles in `TransportBar` stories
+  - click strategy toggles in `ConfigEditor` stories
+  - ensure active/inactive visual states still match baseline
+
+### Technical details
+
+```bash
+cd /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui
+npm run build
+npx vitest run src/components/TransportBar/TransportBar.playback.test.tsx src/components/ConfigEditor/ConfigEditor.strategy.test.tsx
+
+# Storybook parity checks
+# /iframe.html?id=jingleextractor-transportbar--stopped-inst
+# /iframe.html?id=jingleextractor-configeditor--default-config
+```
+
 
