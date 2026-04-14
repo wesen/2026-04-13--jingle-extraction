@@ -96,3 +96,14 @@ Closed the remaining playback/stem validation gap by adding a ticket-local expor
 
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/ttmp/2026/04/13/JINGLE-004--jingle-extractor-full-stack-architecture-review-and-code-quality-assessment/scripts/validate_export_stems.py — Ticket-local validation script for export behavior across all stems
 
+
+## 2026-04-13
+
+Replaced drag-triggered global re-mining with a local-only candidate edit model, overlaid edited boundaries into the visible candidate set, added edited-state indicators/reset affordances, cleared stale edits on preset/config changes, and made preview/export honor edited start/end overrides (commit 6bd9244).
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/export.py — Export route support for edited boundary overrides
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx — Local visible-candidate overlay model and preview/export override wiring
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/features/analysis/analysisSlice.ts — Local candidate edit state lifecycle and clearing behavior
+

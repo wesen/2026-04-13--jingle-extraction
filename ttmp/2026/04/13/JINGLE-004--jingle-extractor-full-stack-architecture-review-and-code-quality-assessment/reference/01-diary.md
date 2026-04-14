@@ -29,12 +29,18 @@ RelatedFiles:
       Note: Lint failure evidence for Storybook configuration
     - Path: jingle-extractor-ui/src/api/jingleApi.test.ts
       Note: Frontend API-layer test coverage added during Step 7
+    - Path: jingle-extractor-ui/src/components/CandidateDetail/CandidateDetail.tsx
+      Note: Step 13 local edit context and reset affordance
+    - Path: jingle-extractor-ui/src/components/CandidateList/CandidateList.tsx
+      Note: Step 13 edited candidate visual indicator
     - Path: jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx
       Note: Validation-time callback fix and root runtime review
     - Path: jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx
       Note: Step 11 timeline interaction test
     - Path: jingle-extractor-ui/src/components/TransportBar/TransportBar.playback.test.tsx
       Note: Step 11 transport/playhead interaction test
+    - Path: jingle-extractor-ui/src/features/analysis/analysisSlice.ts
+      Note: Step 13 local-only candidate edit state model
     - Path: jingle-extractor-ui/src/hooks/useAudioPlayer.ts
       Note: |-
         Playback hook validation findings
@@ -49,6 +55,7 @@ LastUpdated: 2026-04-13T21:48:00-04:00
 WhatFor: Capture how the review was performed, what evidence was gathered, what validation passed or failed, and how to continue the investigation later.
 WhenToUse: Use when continuing the JINGLE-004 review, verifying claims in the design doc, or replaying the investigation commands.
 ---
+
 
 
 
@@ -1321,3 +1328,122 @@ That split makes ad hoc validation slightly awkward. The direct async route-call
 - File added in this step:
   - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/ttmp/2026/04/13/JINGLE-004--jingle-extractor-full-stack-architecture-review-and-code-quality-assessment/scripts/validate_export_stems.py`
 - Task completed in this step: 39
+
+## Step 13: Replace candidate drag re-mining with local editable candidate overlays
+
+The next major issue after playback was the timeline drag behavior. The review had already shown that dragging a candidate handle was semantically wrong: the UI implies “edit this candidate window,” but the code was translating that gesture into a global `/api/mine` call. In this step I resolved that mismatch by choosing a local-only edit model for now and wiring the UI around that choice.
+
+The implementation goal was to make dragging immediately update the visible candidate boundaries, visually indicate edited candidates, provide a reset path, clear stale edits when presets/config change, and make preview/export honor the edited boundaries even though no persistence API exists yet.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 7)
+
+**Assistant interpretation:** Continue down the backlog and fix the next high-impact behavioral seam, which is candidate editing semantics in the timeline.
+
+**Inferred user intent:** The user wants timeline drag to behave intuitively and not secretly trigger unrelated server-side re-mining work.
+
+**Commit (code):** 6bd9244 — "feat(timeline): make candidate drag edits local and exportable"
+
+### What I did
+- Updated `jingle-extractor-ui/src/features/analysis/analysisSlice.ts`:
+  - `setConfig(...)` now clears local candidate edits
+  - `applyPreset(...)` now clears local candidate edits
+  - added `clearAllCandidateEdits()` for explicit bulk reset capability
+- Chose **local-only candidate edits** for this phase instead of introducing a persistence API
+- Rewrote `jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx` to:
+  - stop calling `/api/mine` on handle drag
+  - dispatch `updateCandidateStart(...)` / `updateCandidateEnd(...)` instead
+  - compute `visibleCandidates` as `server candidates + local edited overrides`
+  - use `visibleCandidates` in Timeline, CandidateList, CandidateDetail, preview, and export
+  - pass `start`/`end` overrides to `/api/export` so edited boundaries affect preview/export immediately
+  - expose a reset action for the selected candidate via `clearCandidateEdit(...)`
+- Updated export request models to accept optional `start`/`end` overrides:
+  - frontend `ExportRequest`
+  - backend `ExportRequest`
+  - backend export route now uses override boundaries when provided
+- Updated `jingle-extractor-ui/src/components/CandidateList/CandidateList.tsx`
+  - added a visual edited marker (`✎`) in the badge area
+- Updated `jingle-extractor-ui/src/components/CandidateDetail/CandidateDetail.tsx`
+  - added “Local edit” context state
+  - added `Reset Edit` action when a candidate has local edits
+- Updated `jingle-extractor-ui/src/components/CandidateDetail/CandidateDetail.stories.tsx` to satisfy the new required `onResetEdit` prop after the component API change
+- Marked tasks 41, 42, 44, 45, 46, 47, 48, and 49 complete
+- Marked the persistence-API branch task as N/A because the decision in this phase was local-only editing
+
+### Why
+- Dragging a handle should edit that handle, not globally re-score the entire analysis.
+- A local-only model is the right intermediate step because it fixes user semantics immediately without forcing backend API design too early.
+- Preview/export must honor the visible edited boundaries or the UI becomes inconsistent again.
+- Clearing edits on preset/config changes avoids stale local overrides being applied to conceptually different candidate sets.
+
+### What worked
+- Frontend build passed after the refactor.
+- Vitest frontend tests still passed.
+- Backend tests still passed.
+- The root widget now has a clear mental model: server candidates are immutable source data; local edits are UI overlays.
+
+### What didn't work
+- The first build after changing `CandidateDetail` failed because the Storybook story was still using the old component props:
+  ```text
+  src/components/CandidateDetail/CandidateDetail.stories.tsx(41,8): error TS2741: Property 'onResetEdit' is missing in type '{ candidate: Candidate; stem: StemType; onPreview: () => void; onExport: () => void; }' but required in type 'CandidateDetailProps'.
+  ```
+  I updated the story to pass `onResetEdit={() => alert('Reset edit!')}` and then re-ran build/tests successfully.
+
+### What I learned
+- The local-overlay model solves the immediate UX problem with much less risk than adding a persistence endpoint prematurely.
+- Export override parameters are a useful bridge technique: they let the visible UI remain truthful before the backend has a first-class editable-candidate concept.
+- Clearing candidate edits when presets/config change is essential; otherwise local overrides outlive the server-side assumptions they were based on.
+
+### What was tricky to build
+
+The most subtle design choice here was deciding what “edited candidate” actually means. There are three plausible models:
+
+1. drag immediately persists to the backend,
+2. drag updates only the local UI until an explicit commit exists,
+3. drag should be disallowed until a persistence API exists.
+
+I chose option 2 because it delivers the expected interaction today while keeping the backend API surface stable. The trick then becomes making the rest of the UI consistent with that choice. That is why preview/export now send explicit `start`/`end` overrides: without that, the candidate list would show edited times while the exported clip would still come from the old server boundary.
+
+### What warrants a second pair of eyes
+- Whether the local-only model should later gain a visible “unsaved changes” banner at the panel level, not just candidate-local markers
+- Whether `Reset Edit` should also exist in the list view, not only in the detail view
+- Whether batch export should eventually support per-candidate edited-boundary overrides too
+
+### What should be done in the future
+- Add timeline drag tests now that the drag behavior is local and deterministic
+- Consider extracting visible-candidate overlay logic into a selector/helper if the root widget grows more candidate-edit behavior
+- Revisit whether local-only edits should survive track reloads or analysis refetches
+
+### Code review instructions
+- Start with the state model:
+  - `jingle-extractor-ui/src/features/analysis/analysisSlice.ts`
+- Then review the root orchestration:
+  - `jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx`
+- Then inspect the UI surfaces:
+  - `jingle-extractor-ui/src/components/CandidateList/CandidateList.tsx`
+  - `jingle-extractor-ui/src/components/CandidateDetail/CandidateDetail.tsx`
+- Finally inspect the export override path:
+  - `jingle-extractor-ui/src/api/jingleApi.ts`
+  - `jingle-extractor-backend/app/models.py`
+  - `jingle-extractor-backend/app/routes/export.py`
+- Re-run:
+  ```bash
+  cd jingle-extractor-ui && npm run build
+  cd jingle-extractor-ui && npx vitest run --config vitest.config.ts
+  cd /home/manuel/code/wesen/2026-04-13--jingle-extraction && python3 -m pytest -q jingle-extractor-backend/tests
+  ```
+
+### Technical details
+- Files changed for this step:
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/features/analysis/analysisSlice.ts`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/CandidateList/CandidateList.tsx`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/CandidateDetail/CandidateDetail.tsx`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/CandidateDetail/CandidateDetail.stories.tsx`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/hooks/useAudioPlayer.ts`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/api/jingleApi.ts`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/models.py`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/export.py`
+- Tasks completed in this step: 41, 42, 44, 45, 46, 47, 48, 49
+- Task explicitly resolved as N/A by decision: 43

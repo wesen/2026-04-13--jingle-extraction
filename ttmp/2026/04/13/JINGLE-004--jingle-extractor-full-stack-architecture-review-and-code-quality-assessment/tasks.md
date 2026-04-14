@@ -68,17 +68,17 @@
 ### Phase 3 — Candidate editing and timeline semantics
 
 #### Local candidate edit model
-- [ ] Decide whether timeline drag edits are local-only until explicit commit, or immediately persisted
-- [ ] If local-only, compute visible candidates as server candidates overlaid with `editedCandidates`
-- [ ] If persisted, design and implement an explicit backend API for candidate boundary edits
-- [ ] Remove the current semantic mismatch where drag triggers global re-mining
-- [ ] Use the dragged `id`, `edge`, and `time` values meaningfully in the root handler
+- [x] Decide whether timeline drag edits are local-only until explicit commit, or immediately persisted
+- [x] If local-only, compute visible candidates as server candidates overlaid with `editedCandidates`
+- [x] N/A — chose a local-only candidate edit model for now, so no persistence API was introduced in this phase
+- [x] Remove the current semantic mismatch where drag triggers global re-mining
+- [x] Use the dragged `id`, `edge`, and `time` values meaningfully in the root handler
 
 #### UI behavior for edits
-- [ ] Visually indicate when a candidate has unsaved local edits
-- [ ] Add reset/revert affordances for edited candidate boundaries
-- [ ] Decide whether selecting another preset/config should clear local candidate edits
-- [ ] Decide whether export should use edited boundaries, server boundaries, or only committed boundaries
+- [x] Visually indicate when a candidate has unsaved local edits
+- [x] Add reset/revert affordances for edited candidate boundaries
+- [x] Decide whether selecting another preset/config should clear local candidate edits
+- [x] Decide whether export should use edited boundaries, server boundaries, or only committed boundaries
 
 #### Timeline implementation cleanup
 - [ ] Extract geometry helpers if `Timeline.tsx` continues to grow
