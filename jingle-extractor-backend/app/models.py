@@ -71,7 +71,7 @@ class VocalWord(BaseModel):
     word: str
     start: float
     end: float
-    score: float
+    score: float = 0.0  # optional — WhisperX alignment doesn't always provide this
 
 
 class VocalSegment(BaseModel):
