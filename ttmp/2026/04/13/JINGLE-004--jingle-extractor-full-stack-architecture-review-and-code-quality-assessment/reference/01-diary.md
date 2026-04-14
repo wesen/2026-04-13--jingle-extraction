@@ -13,6 +13,10 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: jingle-extractor-backend/app/routes/export.py
+      Note: Phase 1 export-setting truthfulness implementation from Step 8
+    - Path: jingle-extractor-backend/run.py
+      Note: Verified startup now honors HOST/PORT/LOG_LEVEL during Step 8
     - Path: jingle-extractor-backend/tests/test_endpoints.py
       Note: Backend validation evidence
     - Path: jingle-extractor-ui/.storybook/preview.tsx
@@ -31,6 +35,7 @@ LastUpdated: 2026-04-13T21:48:00-04:00
 WhatFor: Capture how the review was performed, what evidence was gathered, what validation passed or failed, and how to continue the investigation later.
 WhenToUse: Use when continuing the JINGLE-004 review, verifying claims in the design doc, or replaying the investigation commands.
 ---
+
 
 
 
@@ -744,3 +749,130 @@ Another subtle point was the test environment. The application uses a relative `
   - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/vitest.config.ts`
   - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/tests/test_endpoints.py`
 - Tasks completed in this step: 5, 6, 7, 8, 9
+
+## Step 8: Make config truthful by honoring `min_score` and export render settings
+
+After the API contract work, I moved to the next Phase 1 correctness cluster: configuration truthfulness. The review had identified that `min_score`, `fade_in`, and `fade_out` were visible across the UI, presets, and backend models, but they were not all being honored in the runtime behavior. This is the kind of inconsistency that makes a system feel unreliable even when the underlying architecture is good.
+
+In this step I made two explicit product decisions. First, `min_score` should remain a real supported feature for v1 rather than being removed from the config surface. Second, fades should remain configurable, but the system defaults should be aligned to the project preference of 20ms fade-in and 50ms fade-out. With those decisions in place, I wired the backend and frontend so the settings are actually used.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 7)
+
+**Assistant interpretation:** Continue executing the backlog with focused commits and diary updates, moving from review findings into actual correctness fixes.
+
+**Inferred user intent:** The user wants the visible controls and config surface to match real system behavior, not remain half-implemented placeholders.
+
+**Commit (code):** 402d5b2 — "fix(export): honor min score and export render settings"
+
+### What I did
+- Applied `min_score` filtering in `jingle-extractor-backend/app/pipeline.py`
+- Applied `min_score` filtering in `jingle-extractor-backend/app/routes/mine.py`
+- Extended frontend export request types in `jingle-extractor-ui/src/api/jingleApi.ts` to include:
+  - `fade_in`
+  - `fade_out`
+  - `br`
+- Extended backend export models in `jingle-extractor-backend/app/models.py` to accept the same values with sane defaults
+- Updated `jingle-extractor-backend/app/routes/export.py` so `_render_clip(...)` now uses requested fade values and bitrate when exporting MP3s
+- Updated `jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx` so preview/export requests pass the current config’s `fmt`, `fade_in`, `fade_out`, and `br`
+- Updated preset defaults in both frontend and backend to 20ms fade-in / 50ms fade-out:
+  - `jingle-extractor-ui/src/utils/constants.ts`
+  - `jingle-extractor-backend/app/presets.py`
+  - `jingle-extractor-ui/src/mocks/handlers.ts`
+  - related config fixtures/stories/tests
+- Updated `jingle-extractor-backend/run.py` to respect `HOST`, `PORT`, and `LOG_LEVEL` from `app.config`
+- Marked tasks 10, 11, 12, 14, 15, 21, and 22 complete
+- Marked the alternative-path tasks as N/A in `tasks.md`:
+  - removing `min_score`
+  - treating fades as fixed-only UI-hidden policy
+
+### Why
+- A config value that is visible but ignored is worse than an absent feature because it teaches users not to trust the UI.
+- `min_score` is a useful, intuitive control and worth keeping.
+- The project already has an explicit user preference for 20ms/50ms fades, so aligning defaults to that preference reduces surprise.
+- `run.py` should not silently ignore settings already declared in the backend config module.
+
+### What worked
+- Frontend build still passed:
+  ```bash
+  cd jingle-extractor-ui && npm run build
+  ```
+- Full backend tests passed after the change:
+  ```bash
+  python3 -m pytest -q jingle-extractor-backend/tests
+  ```
+- Backend startup smoke test showed `run.py` now honors overridden environment config:
+  ```bash
+  cd jingle-extractor-backend && PORT=8011 timeout 5 ../.venv/bin/python run.py
+  ```
+  with log output including:
+  ```text
+  INFO:     Uvicorn running on http://0.0.0.0:8011
+  ```
+- The preset/default surface is now much more honest: the fade values seen in config can actually influence export rendering.
+
+### What didn't work
+- The export-setting work exposed one more implicit truthfulness gap: bitrate (`br`) was also effectively hardcoded before this change. I chose to wire it through while already touching the export path so the fix would be complete instead of half-finished.
+- There are still no dedicated route tests for `/api/export` or `/api/mine`; those remain future tasks even though this step improved the implementation correctness.
+
+### What I learned
+- Several of the “incomplete config” problems shared the same root cause: the original prototype surface was preserved, but the service-backed implementation only partially absorbed it.
+- The best fixes in this phase are the ones that collapse ambiguity. After this step, the answer to “does `min_score` matter?” and “do fade settings matter?” is no longer “sort of.”
+- Small backend entrypoint fixes like `run.py` config consistency are cheap and worth doing early because they reduce deployment confusion later.
+
+### What was tricky to build
+
+The subtle design choice here was whether to make fades fixed policy or real configuration. The review backlog explicitly called for a decision, and either path was valid. I chose configurable fades for three reasons:
+
+1. the existing UI and model shape already expose them,
+2. removing them would create more surface churn right away,
+3. wiring them through end to end was straightforward once I was already changing the export request contract.
+
+The other tricky part was deciding how much default normalization to do. The existing prototype-derived presets had different fade values, but the project context called for 20ms fade-in and 50ms fade-out as the preferred smoothing behavior. I standardized the current defaults to those values so the system behavior matches the stated preference more closely.
+
+### What warrants a second pair of eyes
+- Whether bitrate should remain request-configurable or eventually be normalized by export preset/theme policy
+- Whether all preset fade values should truly stay identical now, or whether later UX work should reintroduce differentiated fades intentionally
+- Whether `_render_clip(...)` should move into a dedicated export service module sooner rather than later
+
+### What should be done in the future
+- Add backend tests that exercise `/api/mine` with `min_score` thresholds
+- Add backend tests that verify `/api/export` actually honors fade/bitrate inputs
+- Decide whether the export request should eventually include more explicit naming for “render settings” vs “analysis settings”
+
+### Code review instructions
+- Start with backend logic:
+  - `jingle-extractor-backend/app/pipeline.py`
+  - `jingle-extractor-backend/app/routes/mine.py`
+  - `jingle-extractor-backend/app/routes/export.py`
+- Then compare the request contract changes in:
+  - `jingle-extractor-ui/src/api/jingleApi.ts`
+  - `jingle-extractor-backend/app/models.py`
+- Finally review how the root widget passes current config values into preview/export in:
+  - `jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx`
+- Re-run these commands:
+  ```bash
+  cd jingle-extractor-ui && npm run build
+  cd /home/manuel/code/wesen/2026-04-13--jingle-extraction && python3 -m pytest -q jingle-extractor-backend/tests
+  cd jingle-extractor-backend && PORT=8011 timeout 5 ../.venv/bin/python run.py
+  ```
+
+### Technical details
+- Files changed for this step:
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/models.py`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/pipeline.py`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/presets.py`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/export.py`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/mine.py`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/run.py`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/tests/conftest.py`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/api/jingleApi.ts`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/api/jingleApi.test.ts`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/ConfigEditor/ConfigEditor.stories.tsx`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/hooks/useAudioPlayer.ts`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/mocks/handlers.ts`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/utils/constants.ts`
+- Tasks completed in this step: 10, 11, 12, 14, 15, 21, 22
+- Tasks explicitly resolved as N/A by decision: 13, 16

@@ -43,3 +43,15 @@ Implemented Phase 1 API contract fixes: typed analyze as a 202 accepted response
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/api/jingleApi.ts — Frontend API contract fixes for analyze/getAnalysis
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx — Explicit UI handling for processing/failed analysis responses
 
+
+## 2026-04-13
+
+Implemented Phase 1 config truthfulness fixes: min_score now filters both pipeline and /api/mine results, export requests now carry fade/bitrate settings that the backend actually honors, preset fade defaults were standardized to 20ms/50ms, and run.py now respects backend config values (commit 402d5b2).
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/pipeline.py — min_score filtering added to pipeline candidate selection
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/export.py — Export rendering now honors fade and bitrate settings
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/mine.py — min_score filtering added to on-demand re-mining
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/run.py — Runtime config values now flow into uvicorn startup
+

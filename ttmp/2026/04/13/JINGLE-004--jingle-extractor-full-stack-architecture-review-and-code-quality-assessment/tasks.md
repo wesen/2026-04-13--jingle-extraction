@@ -19,13 +19,13 @@
 - [x] Add backend endpoint tests for `GET /api/analysis/{track_id}` in non-complete states
 
 #### Config truthfulness
-- [ ] Decide whether `min_score` is a real supported feature for v1
-- [ ] If yes, apply `min_score` filtering in `app/pipeline.py`
-- [ ] If yes, apply `min_score` filtering in `app/routes/mine.py`
-- [ ] If no, remove or hide `min_score` from frontend config editing and presets until implemented
-- [ ] Decide whether `fade_in` and `fade_out` are user-configurable or fixed policy defaults
-- [ ] If configurable, add fade values to export request handling and apply them in `app/routes/export.py`
-- [ ] If fixed, remove or visually de-emphasize them in the editable config UI
+- [x] Decide whether `min_score` is a real supported feature for v1
+- [x] If yes, apply `min_score` filtering in `app/pipeline.py`
+- [x] If yes, apply `min_score` filtering in `app/routes/mine.py`
+- [x] N/A — chose to support `min_score` for v1 instead of removing it from the UI/config surface
+- [x] Decide whether `fade_in` and `fade_out` are user-configurable or fixed policy defaults
+- [x] If configurable, add fade values to export request handling and apply them in `app/routes/export.py`
+- [x] N/A — chose to keep fades configurable and make export honor them end to end
 
 #### Repo hygiene
 - [ ] Add `storybook-static/` to `.gitignore`
@@ -34,8 +34,8 @@
 - [ ] Ensure the repo has a clean `git status` after build/storybook/test workflows
 
 #### Runtime config consistency
-- [ ] Update `jingle-extractor-backend/run.py` to read host/port/log level from `app.config`
-- [ ] Verify backend startup behavior still works in tmux/dev workflows after that change
+- [x] Update `jingle-extractor-backend/run.py` to read host/port/log level from `app.config`
+- [x] Verify backend startup behavior still works in tmux/dev workflows after that change
 
 ### Phase 2 — Playback and transport completion
 
