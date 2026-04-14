@@ -26,7 +26,11 @@ RelatedFiles:
     - Path: jingle-extractor-ui/.storybook/main.ts
       Note: Storybook static public setup persisted during hygiene cleanup
     - Path: jingle-extractor-ui/.storybook/preview.tsx
-      Note: Lint failure evidence for Storybook configuration
+      Note: |-
+        Lint failure evidence for Storybook configuration
+        Step 15 Storybook decorator cleanup
+    - Path: jingle-extractor-ui/eslint.config.js
+      Note: Step 15 lint-scope cleanup for Storybook/generated assets
     - Path: jingle-extractor-ui/src/api/jingleApi.test.ts
       Note: Frontend API-layer test coverage added during Step 7
     - Path: jingle-extractor-ui/src/components/CandidateDetail/CandidateDetail.tsx
@@ -59,6 +63,7 @@ LastUpdated: 2026-04-13T21:48:00-04:00
 WhatFor: Capture how the review was performed, what evidence was gathered, what validation passed or failed, and how to continue the investigation later.
 WhenToUse: Use when continuing the JINGLE-004 review, verifying claims in the design doc, or replaying the investigation commands.
 ---
+
 
 
 
@@ -1543,3 +1548,101 @@ The drag test also required some careful JSDOM shimming. SVG pointer capture is 
   - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/Timeline/Timeline.tsx`
   - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx`
 - Tasks completed in this step: 50, 51, 52, 53
+
+## Step 15: Clean up Storybook integration and make lint pass on source files again
+
+Once the timeline work was in place, I returned to the Storybook/lint backlog. The review had identified a cluster of issues here: story files were importing renderer types from the wrong package, there were obsolete lint suppression comments, `msw-storybook-addon` was still in the package manifest despite no longer being used, and `eslint .` had previously been polluted by generated Storybook output. This step cleaned that cluster up enough that lint now runs successfully on source files again.
+
+The goal here was not perfect warning-free Storybook polish in every story; it was to remove the structural problems that were causing lint failures and restore a sane Storybook baseline.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 7)
+
+**Assistant interpretation:** Continue into the Storybook/design-system cleanup portion of the backlog and restore tooling hygiene so lint and Storybook workflows are dependable again.
+
+**Inferred user intent:** The user wants the repo to feel production-grade, not just functionally correct in the main app path.
+
+**Commit (code):** 1a34021 — "chore(storybook): align story imports and lint scope"
+
+### What I did
+- Updated Storybook story imports across component stories from `@storybook/react` to `@storybook/react-vite`
+- Removed obsolete `react/display-name` suppression in `.storybook/preview.tsx`
+- Reworked `ConfigEditor.stories.tsx` and `TransportBar.stories.tsx` so Storybook type requirements are satisfied without `any`
+- Reworked `JingleExtractor.stories.tsx` into a cleaner `Meta`/`StoryObj` shape
+- Removed the unused `msw-storybook-addon` dependency from `jingle-extractor-ui/package.json`
+- Updated `jingle-extractor-ui/eslint.config.js` to ignore:
+  - `storybook-static`
+  - `public/mockServiceWorker.js`
+  in addition to `dist`
+- Ran:
+  ```bash
+  cd jingle-extractor-ui && npm install
+  cd jingle-extractor-ui && npm run lint
+  cd jingle-extractor-ui && npm run build
+  cd jingle-extractor-ui && npm run build-storybook
+  ```
+- Marked tasks 54, 55, 56, 57, 58, and 86 complete
+
+### Why
+- Storybook files should follow the same framework conventions as the rest of the toolchain.
+- Generated assets should never be part of normal source linting.
+- Removing unused dependencies and invalid suppression comments lowers future maintenance cost.
+- A passing `npm run lint` on source files is an important signal that the repo is staying coherent as changes accumulate.
+
+### What worked
+- `npm run lint` now completes without errors.
+- `npm run build` still passes.
+- `npm run build-storybook` still passes.
+- Storybook dependency/config cleanup did not break the actual stories.
+
+### What didn't work
+- Lint still reports a handful of **warnings** about redundant story names in a few story files, for example:
+  ```text
+  MenuBar.stories.tsx
+    warning  Named exports should not use the name annotation if it is redundant ...
+  ```
+  and similar warnings in `PresetPanel.stories.tsx` and `ScoreBar.stories.tsx`.
+- These warnings do not currently fail lint, so I treated them as lower-priority polish rather than blocking issues.
+
+### What I learned
+- A lot of the earlier lint pain was not “the app code is broken,” but “tooling boundaries are out of sync.”
+- Ignoring generated Storybook output at the ESLint config layer is more robust than relying only on `.gitignore`.
+- Storybook’s stricter typing around `StoryObj` is worth satisfying properly because it makes stories easier to refactor safely later.
+
+### What was tricky to build
+
+The subtle part of this step was separating source hygiene from generated-artifact hygiene. `.gitignore` alone solved the repository-noise problem, but ESLint still needed its own ignore rules because `eslint .` walks the filesystem independently of Git tracking. That is why this step needed both package/config changes and story-file updates.
+
+There was also a type-shape subtlety in the stories themselves. Some stories had been using loose `any`-based render helpers. Moving them to Storybook’s expected `args`-driven shapes fixed both lint and type-check friction, but required a small amount of story rewriting rather than just changing imports.
+
+### What warrants a second pair of eyes
+- Whether the remaining redundant-story-name warnings should be cleaned immediately or left for a later polish pass
+- Whether Storybook now has the right long-term baseline, or whether more shared story helpers should be introduced
+
+### What should be done in the future
+- Clean the remaining non-failing Storybook warnings so lint output becomes truly quiet
+- Consider documenting Storybook conventions for this repo so future component stories start in the right shape
+
+### Code review instructions
+- Review:
+  - `jingle-extractor-ui/eslint.config.js`
+  - `jingle-extractor-ui/package.json`
+  - `.storybook/preview.tsx`
+  - updated `*.stories.tsx` files under `src/components/`
+- Re-run:
+  ```bash
+  cd jingle-extractor-ui && npm run lint
+  cd jingle-extractor-ui && npm run build
+  cd jingle-extractor-ui && npm run build-storybook
+  ```
+- Note that lint currently passes with warnings but without errors.
+
+### Technical details
+- Files changed for this step included:
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/eslint.config.js`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/package.json`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/package-lock.json`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/.storybook/preview.tsx`
+  - story files under `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/`
+- Tasks completed in this step: 54, 55, 56, 57, 58, 86

@@ -117,3 +117,14 @@ Simplified the timeline drag boundary by removing imperative converter/svg-ref p
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx — Timeline interaction regression coverage
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/Timeline/useTimelineDrag.ts — Declarative drag hook cleanup
 
+
+## 2026-04-13
+
+Aligned Storybook stories with the React-Vite framework package, removed obsolete Storybook lint suppressions and the unused msw-storybook-addon dependency, ignored generated Storybook artifacts in ESLint scope, and restored a passing source lint/build/build-storybook baseline (commit 1a34021).
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/.storybook/preview.tsx — Storybook decorator cleanup
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/eslint.config.js — Source-only lint scope for Storybook/generated assets
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/package.json — Removed unused msw-storybook-addon dependency
+

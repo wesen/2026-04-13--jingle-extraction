@@ -89,11 +89,11 @@
 ### Phase 4 — Storybook and design-system cleanup
 
 #### Storybook correctness
-- [ ] Standardize story imports on the Storybook framework package conventions used by the project
-- [ ] Remove invalid or obsolete ESLint disable comments in Storybook files
-- [ ] Clean up `preview.tsx` decorator lint issues
-- [ ] Remove unused `msw-storybook-addon` dependency if it is no longer needed
-- [ ] Verify `build-storybook` still succeeds after cleanup
+- [x] Standardize story imports on the Storybook framework package conventions used by the project
+- [x] Remove invalid or obsolete ESLint disable comments in Storybook files
+- [x] Clean up `preview.tsx` decorator lint issues
+- [x] Remove unused `msw-storybook-addon` dependency if it is no longer needed
+- [x] Verify `build-storybook` still succeeds after cleanup
 
 #### Design-system polish
 - [ ] Audit all extracted components for consistent `data-part` usage
@@ -139,7 +139,7 @@
 #### Validation target
 - [ ] Make `npm run build` pass consistently from a clean checkout
 - [ ] Make `python3 -m pytest -q jingle-extractor-backend/tests` pass consistently from a clean checkout
-- [ ] Make `npm run lint` clean or explicitly narrow lint scope to source-only files
+- [x] Make `npm run lint` clean or explicitly narrow lint scope to source-only files
 - [ ] Document the intended validation commands in the repo README or ticket follow-up notes
 
 ## Suggested ticket split for implementation
