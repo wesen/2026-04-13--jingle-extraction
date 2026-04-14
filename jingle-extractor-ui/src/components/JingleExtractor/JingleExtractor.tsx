@@ -29,6 +29,7 @@ import { ConfigEditor } from '../ConfigEditor';
 import { Timeline } from '../Timeline';
 import { CandidateList } from '../CandidateList';
 import { CandidateDetail } from '../CandidateDetail';
+import { DebugPanel } from '../DebugPanel';
 import { DEFAULT_PRESETS } from '../../utils/constants';
 import { PARTS } from './parts';
 import { isAnalysisCompleteResponse, type Candidate, type PresetName } from '../../api/types';
@@ -157,6 +158,14 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
   }, [candidates, editedCandidates]);
 
   const selectedCandidate = visibleCandidates.find((c) => c.id === selectedId) ?? null;
+  const previewingCandidateId = useMemo(() => {
+    if (audioPlayer.playbackKind !== 'clip' || !audioPlayer.playbackKey?.startsWith('candidate:')) {
+      return null;
+    }
+
+    const value = Number(audioPlayer.playbackKey.replace('candidate:', ''));
+    return Number.isFinite(value) ? value : null;
+  }, [audioPlayer.playbackKey, audioPlayer.playbackKind]);
   const presetNames = Object.keys(DEFAULT_PRESETS) as PresetName[];
 
   useEffect(() => {
@@ -177,17 +186,27 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
       const cand = visibleCandidates.find((c) => c.id === id);
       if (!cand) return;
 
-      await audioPlayer.playClip('/api/export', {
-        trackId,
-        candidateId: cand.id,
-        stem,
-        fmt: config.fmt,
-        fade_in: config.fade_in,
-        fade_out: config.fade_out,
-        br: config.br,
-        start: cand.start,
-        end: cand.end,
-      });
+      const playbackKey = `candidate:${cand.id}`;
+      if (audioPlayer.playbackKind === 'clip' && audioPlayer.playbackKey === playbackKey) {
+        audioPlayer.stop();
+        return;
+      }
+
+      await audioPlayer.playClip(
+        '/api/export',
+        {
+          trackId,
+          candidateId: cand.id,
+          stem,
+          fmt: config.fmt,
+          fade_in: config.fade_in,
+          fade_out: config.fade_out,
+          br: config.br,
+          start: cand.start,
+          end: cand.end,
+        },
+        { playbackKey }
+      );
     },
     [audioPlayer, config.br, config.fade_in, config.fade_out, config.fmt, trackId, stem, visibleCandidates]
   );
@@ -310,6 +329,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
                 <CandidateList
                   candidates={visibleCandidates}
                   selectedId={selectedId}
+                  previewingId={previewingCandidateId}
                   onSelect={handleCandidateSelect}
                   onPreview={handlePreview}
                 />
@@ -324,6 +344,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
                 <CandidateDetail
                   candidate={selectedCandidate}
                   stem={stem}
+                  isPreviewing={previewingCandidateId === selectedCandidate.id}
                   onPreview={() => handlePreview(selectedCandidate.id)}
                   onExport={() => handleExport(selectedCandidate.id)}
                   onResetEdit={() => dispatch(clearCandidateEdit(selectedCandidate.id))}
@@ -331,6 +352,23 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
               </MacWindow>
             )}
           </div>
+
+          {analysisComplete && (
+            <MacWindow
+              title="Debug — jingle and lyric timestamps"
+              style={{ flexShrink: 0 }}
+              bodyStyle={{ overflow: 'auto' }}
+            >
+              <DebugPanel
+                candidates={visibleCandidates}
+                vocals={vocals}
+                selectedCandidateId={selectedId}
+                activePreset={activePreset}
+                config={config}
+                onSelectCandidate={handleCandidateSelect}
+              />
+            </MacWindow>
+          )}
         </div>
       </div>
     </div>

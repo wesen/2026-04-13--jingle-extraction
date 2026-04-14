@@ -95,6 +95,16 @@ export const PARTS = {
   scoreBarTrack: 'score-bar-track',
   scoreBarBlock: 'score-bar-block',
 
+  // ── Debug panel ─────────────────────────────────────────────────────────
+  debugPanel: 'debug-panel',
+  debugSummary: 'debug-summary',
+  debugTables: 'debug-tables',
+  debugSection: 'debug-section',
+  debugSectionTitle: 'debug-section-title',
+  debugScroll: 'debug-scroll',
+  debugTable: 'debug-table',
+  debugText: 'debug-text',
+
   // ── Action buttons ──────────────────────────────────────────────────────
   buttonRow: 'button-row',
   previewButton: 'preview-button',

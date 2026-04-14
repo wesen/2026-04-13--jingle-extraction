@@ -16,6 +16,7 @@ import './CandidateDetail.css';
 interface CandidateDetailProps {
   candidate: DisplayCandidate;
   stem: StemType;
+  isPreviewing?: boolean;
   onPreview: () => void;
   onExport: () => void;
   onResetEdit: () => void;
@@ -24,6 +25,7 @@ interface CandidateDetailProps {
 export function CandidateDetail({
   candidate,
   stem,
+  isPreviewing = false,
   onPreview,
   onExport,
   onResetEdit,
@@ -95,7 +97,7 @@ export function CandidateDetail({
       {/* Action buttons */}
       <div data-part={PARTS.buttonRow}>
         <button data-part={PARTS.previewButton} onClick={onPreview}>
-          ▶ Preview
+          {isPreviewing ? '■ Stop Preview' : '▶ Preview'}
         </button>
         <button data-part={PARTS.exportButton} onClick={onExport}>
           ⬇ Export

@@ -15,6 +15,7 @@ import './CandidateList.css';
 interface CandidateListProps {
   candidates: DisplayCandidate[];
   selectedId: number | null;
+  previewingId?: number | null;
   onSelect: (id: number) => void;
   onPreview: (id: number) => void;
 }
@@ -22,6 +23,7 @@ interface CandidateListProps {
 export function CandidateList({
   candidates,
   selectedId,
+  previewingId = null,
   onSelect,
   onPreview,
 }: CandidateListProps) {
@@ -34,6 +36,7 @@ export function CandidateList({
     >
       {candidates.map((c) => {
         const isSelected = selectedId === c.id;
+        const isPreviewing = previewingId === c.id;
         const duration = c.end - c.start;
 
         return (
@@ -76,10 +79,10 @@ export function CandidateList({
                 e.stopPropagation();
                 onPreview(c.id);
               }}
-              aria-label={`Preview candidate ${c.rank}`}
-              title="Preview"
+              aria-label={isPreviewing ? `Stop preview candidate ${c.rank}` : `Preview candidate ${c.rank}`}
+              title={isPreviewing ? 'Stop preview' : 'Preview'}
             >
-              ▶
+              {isPreviewing ? '■' : '▶'}
             </button>
           </div>
         );

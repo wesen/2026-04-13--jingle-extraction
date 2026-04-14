@@ -20,7 +20,7 @@ interface AnalysisState {
 const initialState: AnalysisState = {
   selectedCandidateId: null,
   playhead: 0,
-  stem: 'inst',
+  stem: 'orig',
   activePreset: null,
   config: DEFAULT_CONFIG,
   theme: 'retro',
@@ -86,7 +86,7 @@ const analysisSlice = createSlice({
     resetAll(state) {
       state.selectedCandidateId = null;
       state.playhead = 0;
-      state.stem = 'inst';
+      state.stem = 'orig';
       state.activePreset = null;
       state.config = DEFAULT_CONFIG;
       state.editedCandidates = {};

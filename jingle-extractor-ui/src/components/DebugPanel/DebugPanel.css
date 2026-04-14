@@ -1,0 +1,76 @@
+/**
+ * DebugPanel.css — styles for candidate/lyric timestamp inspection.
+ */
+
+[data-widget='jingle-extractor'] [data-part='debug-panel'] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--je-space-3, 6px);
+  min-height: 0;
+}
+
+[data-widget='jingle-extractor'] [data-part='debug-summary'] {
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 2px 0 6px;
+}
+
+[data-widget='jingle-extractor'] [data-part='debug-tables'] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--je-space-4, 8px);
+  min-height: 0;
+}
+
+[data-widget='jingle-extractor'] [data-part='debug-section'] {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+[data-widget='jingle-extractor'] [data-part='debug-section-title'] {
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+[data-widget='jingle-extractor'] [data-part='debug-scroll'] {
+  overflow: auto;
+  max-height: 220px;
+  border: 1px solid var(--je-color-border, #000);
+  background: var(--je-color-surface, #fff);
+}
+
+[data-widget='jingle-extractor'] [data-part='debug-table'] {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+[data-widget='jingle-extractor'] [data-part='debug-table'] th,
+[data-widget='jingle-extractor'] [data-part='debug-table'] td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--je-color-border-muted, #888);
+  text-align: left;
+  vertical-align: top;
+}
+
+[data-widget='jingle-extractor'] [data-part='debug-table'] tbody tr[data-selected='true'],
+[data-widget='jingle-extractor'] [data-part='debug-table'] tbody tr[data-overlap='true'] {
+  background: color-mix(in srgb, var(--je-color-accent, #000) 10%, transparent);
+}
+
+[data-widget='jingle-extractor'] [data-part='debug-table'] tbody tr {
+  cursor: default;
+}
+
+[data-widget='jingle-extractor'] [data-part='debug-table'] tbody tr[data-selected='true'],
+[data-widget='jingle-extractor'] [data-part='debug-table'] tbody tr:hover {
+  background: color-mix(in srgb, var(--je-color-accent, #000) 12%, transparent);
+}
+
+[data-widget='jingle-extractor'] [data-part='debug-text'] {
+  white-space: normal;
+}
