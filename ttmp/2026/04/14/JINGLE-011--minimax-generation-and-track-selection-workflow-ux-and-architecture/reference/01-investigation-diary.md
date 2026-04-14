@@ -36,7 +36,7 @@ RelatedFiles:
       Note: Investigated creator-oriented output framing for UX guidance
 ExternalSources: []
 Summary: Chronological research diary for the MiniMax generation and track selection design ticket.
-LastUpdated: 2026-04-14T23:06:00-04:00
+LastUpdated: 2026-04-14T23:55:00-04:00
 WhatFor: Capture the investigation process, evidence collection, and delivery steps for JINGLE-011.
 WhenToUse: Use when reviewing how the design was assembled or continuing the research/implementation stream later.
 ---
@@ -626,3 +626,99 @@ Type 'string | number' is not assignable to type 'never'
 Type 'string | number | symbol' is not assignable to type 'Key | null | undefined'
 Error: Calling setState synchronously within an effect can trigger cascading renders
 ```
+
+## Step 5: Execute ordered follow-up (CandidateList migration → widget decorator helper → composer improvements)
+
+I executed the next implementation sequence exactly in the order requested by the user:
+1) migrate CandidateList,
+2) add the widget helper,
+3) work on the composer.
+
+This step moved the extraction from “new primitive exists” to “legacy widget actually consumes primitive” while also reducing Storybook wrapper duplication and improving composer readiness for store-driven integration.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Migrate candidate list, then the widget helper, then work on the composer."
+
+**Assistant interpretation:** Perform three concrete implementation slices in strict order, with commits at each milestone and validation after each slice.
+
+**Inferred user intent:** Keep extraction momentum while maintaining parity quality and avoid broad risky rewrites.
+
+### Commits in this step
+- `4ed1c37` — `refactor(ui): migrate CandidateList internals to DataList primitive`
+- `641449f` — `refactor(storybook): add shared widget decorators helper`
+- `91ba054` — `feat(studio): strengthen GenerationComposer validation and add slice container`
+
+### What I did
+
+#### 1) Migrated `CandidateList` to `DataList`
+- Replaced manual row mapping in `CandidateList.tsx` with the shared `DataList` primitive.
+- Preserved visual/data-part compatibility by:
+  - keeping candidate-specific cell parts (`candidate-rank`, `candidate-title`, etc.)
+  - adding part overrides to `DataList` (`rootPart`, `rowPart`, `cellPart`, `actionPart`) so legacy widgets can migrate incrementally without style breakage.
+- Kept preview action behavior and selected/preview state semantics intact.
+
+#### 2) Added widget Storybook helper and removed repeated wrappers
+- Added `src/components/storybook/widgetStoryDecorators.tsx` with:
+  - `withWidgetRoot(...)`
+  - `withWidgetWindow(...)`
+- Migrated repeated decorators in these stories to the helper:
+  - `SegmentedControl.stories.tsx`
+  - `DataList.stories.tsx`
+  - `TrackResultsList.stories.tsx`
+  - `TrackLibraryList.stories.tsx`
+  - `TrackInspector.stories.tsx`
+  - `StudioScreen.stories.tsx`
+- This removed repeated `data-widget + data-je-theme + MacWindow` boilerplate and made story context setup consistent.
+
+#### 3) Worked on `GenerationComposer`
+- Added field-level validation:
+  - prompt required
+  - model required
+  - count must be integer in range 1..8
+- Added visual invalid states:
+  - `aria-invalid` on invalid fields
+  - `field-error` message slots
+  - invalid border styling in `shared/form.css`
+- Disabled `Generate batch` when invalid or generating.
+- Added optional `Reset draft` action in composer.
+- Added `GenerationComposerContainer` wired to `studioSlice`:
+  - reads `state.studio.draft`
+  - dispatches `setDraft` on edits
+  - dispatches `resetDraft` for reset action
+- Added store-backed Storybook for container:
+  - `GenerationComposerContainer.stories.tsx`
+  - includes default and invalid-draft states.
+
+### Validation
+
+Commands run:
+
+```bash
+cd /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui
+npm run build
+npm run lint
+npx vitest run
+npm run build-storybook
+```
+
+Results:
+- build ✅
+- tests ✅ (`5` files, `8` tests)
+- storybook build ✅
+- lint ✅ warnings only (same pre-existing Storybook redundant-name warnings)
+
+### What worked
+- CandidateList now uses the extracted DataList primitive without visual contract regressions.
+- Storybook helper reduced duplicated decorator setup and kept framing consistent.
+- Composer now has meaningful validation UX and a direct path to slice-driven runtime behavior.
+
+### What was tricky
+- Store-backed story setup for `GenerationComposerContainer` initially failed due strict TS inference on `preloadedState`; switched to creating store first and dispatching `setDraft` to initialize story state safely.
+- One Playwright capture initially showed loading spinner only; snapshot confirmed story content existed after settle.
+
+### What should be done next
+- Use `GenerationComposerContainer` inside a future `StudioScreenContainer` so the full studio flow is store-driven.
+- Add focused interaction tests for composer validation and reset behavior.
+- Continue replacing legacy list-like widgets with `DataList` using the same compatibility migration pattern.
+
