@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useMemo } from 'react';
-import { useAnalyzeMutation, useGetAnalysisQuery, useExportClipMutation } from '../../api/jingleApi';
+import { useAnalyzeMutation, useGetAnalysisQuery, useExportClipMutation, useMineCandidatesMutation } from '../../api/jingleApi';
 import { useAppDispatch, useAppSelector } from '../../hooks/useRedux';
 import { useAudioPlayer } from '../../hooks/useAudioPlayer';
 import {
@@ -66,7 +66,8 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
     isError,
     refetch,
   } = useGetAnalysisQuery(trackId);
-  const [runAnalysis, { isLoading: isRunning }] = useAnalyzeMutation();
+  const [runAnalysis, { isLoading: isAnalyzing }] = useAnalyzeMutation();
+  const [mineCandidates, { isLoading: isMining }] = useMineCandidatesMutation();
   const [exportClip] = useExportClipMutation();
 
   // ── Event handlers ───────────────────────────────────────────────────
@@ -86,11 +87,18 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
 
   const handleRunAnalysis = useCallback(async () => {
     try {
+      if (isAnalysisCompleteResponse(analysis)) {
+        await mineCandidates({ trackId, config }).unwrap();
+        await refetch();
+        return;
+      }
+
       await runAnalysis({ audio_file: trackId, config }).unwrap();
+      await refetch();
     } catch (e) {
       console.error('Analysis failed:', e);
     }
-  }, [runAnalysis, trackId, config]);
+  }, [analysis, config, mineCandidates, refetch, runAnalysis, trackId]);
 
   const handleReset = useCallback(() => {
     dispatch(applyPreset({ name: 'Default', config: DEFAULT_PRESETS.Default }));
@@ -264,7 +272,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
               onChange={handleConfigChange}
               onRun={handleRunAnalysis}
               onReset={handleReset}
-              isLoading={isRunning}
+              isLoading={isAnalyzing || isMining}
               style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
             />
           </MacWindow>
