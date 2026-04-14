@@ -303,7 +303,7 @@ export function Timeline({
   );
 
   // Drag handling
-  const { onPointerDown, onPointerMove, onPointerUp, setSvgRef } = useTimelineDrag({
+  const { onPointerDown, onPointerMove, onPointerUp, setSvgRef, setConverter } = useTimelineDrag({
     maxTime: dur,
     onCandidateUpdate: (id, edge, time) => {
       const cand = candidates.find((c) => c.id === id);
@@ -315,6 +315,13 @@ export function Timeline({
       }
     },
   });
+
+  // Provide the xToT converter to the drag hook so it can translate pointer positions to time
+  const xToTCallback = useCallback(
+    (x: number) => Math.max(0, Math.min(dur, (x / pW) * dur)),
+    [dur, pW]
+  );
+  setConverter(xToTCallback);
 
   // Click background → set playhead
   const handleBgClick = useCallback(

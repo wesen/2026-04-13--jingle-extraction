@@ -8,8 +8,9 @@
  */
 
 import { useCallback } from 'react';
-import { useAnalyzeMutation, useGetAnalysisQuery, useMineCandidatesMutation } from '../../api/jingleApi';
+import { useAnalyzeMutation, useGetAnalysisQuery, useMineCandidatesMutation, useExportClipMutation } from '../../api/jingleApi';
 import { useAppDispatch, useAppSelector } from '../../hooks/useRedux';
+import { useAudioPlayer } from '../../hooks/useAudioPlayer';
 import {
   applyPreset,
   setConfig,
@@ -49,6 +50,8 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
   const { data: analysis, isLoading, isError } = useGetAnalysisQuery(trackId);
   const [runAnalysis, { isLoading: isRunning }] = useAnalyzeMutation();
   const [mineCandidates] = useMineCandidatesMutation();
+  const [exportClip] = useExportClipMutation();
+  const audioPlayer = useAudioPlayer();
 
   // ── Event handlers ───────────────────────────────────────────────────
   const handlePresetSelect = useCallback(
@@ -94,7 +97,6 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
 
   const handleCandidateUpdate = useCallback(
     async (_id: number, _edge: 'start' | 'end', _time: number) => {
-      // Re-mine candidates when user drags handles
       try {
         await mineCandidates({ trackId, config }).unwrap();
       } catch {
@@ -104,7 +106,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
     [mineCandidates, trackId, config]
   );
 
-  // ── Derived data ─────────────────────────────────────────────────────
+  // ── Derived data (must be before handlers that reference candidates) ──
   const track = analysis?.track;
   const timeline = analysis?.timeline;
   const vocals = analysis?.vocals?.segments ?? [];
@@ -112,6 +114,45 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
 
   const selectedCandidate = candidates.find((c) => c.id === selectedId) ?? null;
   const presetNames = Object.keys(DEFAULT_PRESETS) as PresetName[];
+
+  // ── Handlers that reference derived data ──────────────────────────────
+  const handlePreview = useCallback(
+    async (id: number) => {
+      const cand = candidates.find((c) => c.id === id);
+      if (!cand) return;
+      audioPlayer.play('/api/export', {
+        trackId,
+        candidateId: cand.id,
+        stem,
+        fmt: 'mp3',
+      });
+    },
+    [audioPlayer, candidates, trackId, stem]
+  );
+
+  const handleExport = useCallback(
+    async (id: number) => {
+      const cand = candidates.find((c) => c.id === id);
+      if (!cand) return;
+      try {
+        const blob = await exportClip({
+          trackId,
+          candidateId: cand.id,
+          stem,
+          fmt: 'mp3',
+        }).unwrap();
+        const url = URL.createObjectURL(blob as Blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `clip_${cand.id}.mp3`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.error('Export failed:', e);
+      }
+    },
+    [exportClip, candidates, trackId, stem]
+  );
 
   return (
     <div data-part={PARTS.root}>
@@ -193,7 +234,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
                   candidates={candidates}
                   selectedId={selectedId}
                   onSelect={handleCandidateSelect}
-                  onPreview={(id) => console.info('Preview candidate', id)}
+                  onPreview={handlePreview}
                 />
               )}
             </MacWindow>
@@ -206,8 +247,8 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
                 <CandidateDetail
                   candidate={selectedCandidate}
                   stem={stem}
-                  onPreview={() => console.info('Preview', selectedCandidate.id)}
-                  onExport={() => console.info('Export', selectedCandidate.id)}
+                  onPreview={() => handlePreview(selectedCandidate.id)}
+                  onExport={() => handleExport(selectedCandidate.id)}
                 />
               </MacWindow>
             )}
