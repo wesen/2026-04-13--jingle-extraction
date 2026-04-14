@@ -81,10 +81,10 @@
 - [x] Decide whether export should use edited boundaries, server boundaries, or only committed boundaries
 
 #### Timeline implementation cleanup
-- [ ] Extract geometry helpers if `Timeline.tsx` continues to grow
-- [ ] Reduce imperative coupling between `Timeline.tsx` and the root widget
-- [ ] Add targeted tests for candidate handle dragging start/end constraints
-- [ ] Add tests for playhead clicks and selection interactions
+- [x] Extract geometry helpers if `Timeline.tsx` continues to grow
+- [x] Reduce imperative coupling between `Timeline.tsx` and the root widget
+- [x] Add targeted tests for candidate handle dragging start/end constraints
+- [x] Add tests for playhead clicks and selection interactions
 
 ### Phase 4 — Storybook and design-system cleanup
 

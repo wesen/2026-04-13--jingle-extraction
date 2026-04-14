@@ -107,3 +107,13 @@ Replaced drag-triggered global re-mining with a local-only candidate edit model,
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx — Local visible-candidate overlay model and preview/export override wiring
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/features/analysis/analysisSlice.ts — Local candidate edit state lifecycle and clearing behavior
 
+
+## 2026-04-13
+
+Simplified the timeline drag boundary by removing imperative converter/svg-ref plumbing from the drag hook, extracted a candidate-edge clamp helper, and added regression tests for timeline clicks, candidate selection, and drag constraints (commit ef05b23).
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx — Timeline interaction regression coverage
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/Timeline/useTimelineDrag.ts — Declarative drag hook cleanup
+

@@ -36,7 +36,11 @@ RelatedFiles:
     - Path: jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx
       Note: Validation-time callback fix and root runtime review
     - Path: jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx
-      Note: Step 11 timeline interaction test
+      Note: |-
+        Step 11 timeline interaction test
+        Step 14 timeline click/selection/drag regression tests
+    - Path: jingle-extractor-ui/src/components/Timeline/useTimelineDrag.ts
+      Note: Step 14 drag-hook simplification
     - Path: jingle-extractor-ui/src/components/TransportBar/TransportBar.playback.test.tsx
       Note: Step 11 transport/playhead interaction test
     - Path: jingle-extractor-ui/src/features/analysis/analysisSlice.ts
@@ -55,6 +59,7 @@ LastUpdated: 2026-04-13T21:48:00-04:00
 WhatFor: Capture how the review was performed, what evidence was gathered, what validation passed or failed, and how to continue the investigation later.
 WhenToUse: Use when continuing the JINGLE-004 review, verifying claims in the design doc, or replaying the investigation commands.
 ---
+
 
 
 
@@ -1447,3 +1452,94 @@ I chose option 2 because it delivers the expected interaction today while keepin
   - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/export.py`
 - Tasks completed in this step: 41, 42, 44, 45, 46, 47, 48, 49
 - Task explicitly resolved as N/A by decision: 43
+
+## Step 14: Simplify timeline drag internals and add drag/selection regression tests
+
+After the local candidate edit model was in place, I cleaned up the timeline implementation itself. The review backlog still had two structural items in this area: the timeline internals were more imperative than they needed to be, and there were no targeted tests for handle-drag constraints or candidate selection interactions. This step addressed both.
+
+The main implementation idea was to simplify `useTimelineDrag` so it no longer needs the Timeline component to imperatively inject converter and SVG refs. Instead, the hook now receives `xToT` directly and uses the current SVG event target for geometry. That makes the hook easier to understand and reduces coupling between the hook and the component that owns it.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 7)
+
+**Assistant interpretation:** Continue resolving the timeline-specific cleanup items now that the user-facing candidate editing model is correct.
+
+**Inferred user intent:** The user wants the timeline codebase to become more maintainable, not just superficially functional.
+
+**Commit (code):** ef05b23 — "refactor(timeline): simplify drag wiring and cover interactions"
+
+### What I did
+- Rewrote `jingle-extractor-ui/src/components/Timeline/useTimelineDrag.ts` to:
+  - accept `xToT` directly in hook options
+  - use `e.currentTarget.ownerSVGElement` for pointer-down capture
+  - use `e.currentTarget.getBoundingClientRect()` for pointer move geometry
+  - remove `setSvgRef(...)`
+  - remove `setConverter(...)`
+- Updated `jingle-extractor-ui/src/components/Timeline/Timeline.tsx` to:
+  - remove the old imperative converter/ref plumbing
+  - extract `clampCandidateEdgeTime(...)` as a helper
+  - add `data-part="candidate-handle"` to handle hit targets
+- Expanded `jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx` to cover:
+  - playhead click updates
+  - candidate selection clicks
+  - handle dragging that clamps start before end
+- Re-ran:
+  ```bash
+  cd jingle-extractor-ui && npx vitest run --config vitest.config.ts src/components/Timeline/Timeline.test.tsx
+  cd jingle-extractor-ui && npm run build
+  cd /home/manuel/code/wesen/2026-04-13--jingle-extraction && python3 -m pytest -q jingle-extractor-backend/tests
+  ```
+- Marked tasks 50, 51, 52, and 53 complete
+
+### Why
+- Imperative hook wiring (`setConverter`, `setSvgRef`) was harder to reason about than necessary.
+- The timeline is one of the most behavior-heavy components in the UI, so it benefits from direct regression tests.
+- Adding `data-part="candidate-handle"` also improves the public selector consistency of the component.
+
+### What worked
+- The timeline drag hook became simpler and more declarative.
+- All new timeline tests passed.
+- Frontend build still passed.
+- Backend tests remained green.
+
+### What didn't work
+- N/A in this step. The refactor and tests landed cleanly without a failed intermediate compile/test run.
+
+### What I learned
+- The drag hook did not need as much shared mutable state as the first implementation used.
+- Adding testable DOM markers (`data-part` on the handles) makes both theming and testing easier.
+- The timeline click and drag math is now much easier to audit because the conversion/clamping logic is more localized.
+
+### What was tricky to build
+
+The key design choice here was deciding whether to extract more of the timeline into separate files or just simplify the existing structure. I chose the lighter option: keep the render layers in one file for now, but remove the most awkward imperative hook boundary. That delivered most of the maintainability benefit without exploding the file count further.
+
+The drag test also required some careful JSDOM shimming. SVG pointer capture is not fully implemented in JSDOM, so the test had to stub `setPointerCapture` and `releasePointerCapture` on the rendered SVG element. That is a good example of test setup detail that should stay recorded in the diary.
+
+### What warrants a second pair of eyes
+- Whether the timeline has now reached a good steady state, or whether further extraction into smaller geometry/helper modules would still be worthwhile later
+- Whether the current `candidate-handle` selector should also gain richer accessibility labeling in a future pass
+
+### What should be done in the future
+- Add higher-level candidate-edit integration tests once more of the root widget behavior is covered
+- Consider whether waveform/time-label generation should also move into smaller helpers if the file grows again
+
+### Code review instructions
+- Review:
+  - `jingle-extractor-ui/src/components/Timeline/useTimelineDrag.ts`
+  - `jingle-extractor-ui/src/components/Timeline/Timeline.tsx`
+  - `jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx`
+- Re-run:
+  ```bash
+  cd jingle-extractor-ui && npx vitest run --config vitest.config.ts src/components/Timeline/Timeline.test.tsx
+  cd jingle-extractor-ui && npm run build
+  cd /home/manuel/code/wesen/2026-04-13--jingle-extraction && python3 -m pytest -q jingle-extractor-backend/tests
+  ```
+
+### Technical details
+- Files changed for this step:
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/Timeline/useTimelineDrag.ts`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/Timeline/Timeline.tsx`
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx`
+- Tasks completed in this step: 50, 51, 52, 53
