@@ -6,11 +6,20 @@
  */
 
 import type { Candidate } from '../../api/types';
-
-type DisplayCandidate = Candidate & { edited?: boolean };
 import { fmt } from '../../utils/format';
+import { DataList, type ColumnDef } from '../DataList';
 import { PARTS } from '../JingleExtractor/parts';
 import './CandidateList.css';
+
+type DisplayCandidate = Candidate & { edited?: boolean };
+
+const COLUMNS: ColumnDef<DisplayCandidate>[] = [
+  { key: 'rank', width: '22px', align: 'center' },
+  { key: 'time', width: 'minmax(0, 1fr)' },
+  { key: 'duration', width: '42px', align: 'right' },
+  { key: 'score', width: '34px', align: 'right' },
+  { key: 'badge', width: '52px', align: 'center' },
+];
 
 interface CandidateListProps {
   candidates: DisplayCandidate[];
@@ -28,68 +37,54 @@ export function CandidateList({
   onPreview,
 }: CandidateListProps) {
   return (
-    <div
-      data-part={PARTS.candidateList}
-      role="listbox"
-      aria-label="Candidate clips"
-      aria-multiselectable={false}
-    >
-      {candidates.map((c) => {
-        const isSelected = selectedId === c.id;
-        const isPreviewing = previewingId === c.id;
-        const duration = c.end - c.start;
-
-        const label = c.source_text ?? `Candidate #${c.rank}`;
-
-        return (
-          <div
-            key={c.id}
-            data-part={PARTS.candidateRow}
-            role="option"
-            aria-selected={isSelected}
-            onClick={() => onSelect(c.id)}
-          >
-            {/* Rank badge */}
-            <span data-part={PARTS.candidateRank}>
-              {c.best ? '★' : `#${c.rank}`}
-            </span>
-
-            {/* Time range */}
-            <span data-part={PARTS.candidateTime}>
-              <span data-part={PARTS.candidateTitle}>{label}</span>
-              <span>{fmt(c.start)} → {fmt(c.end)}</span>
-            </span>
-
-            {/* Duration */}
-            <span data-part={PARTS.candidateDuration}>
-              {duration.toFixed(1)}s
-            </span>
-
-            {/* Score */}
-            <span data-part={PARTS.candidateScore}>
-              {c.score}
-            </span>
-
-            {/* Vocal overlap badge */}
-            <span data-part={PARTS.candidateBadge}>
-              {c.vocal_overlap ? '⚠ vox' : '✓'}{c.edited ? ' ✎' : ''}
-            </span>
-
-            {/* Preview button */}
+    <DataList
+      items={candidates}
+      columns={COLUMNS}
+      selectedId={selectedId}
+      previewingId={previewingId}
+      ariaLabel="Candidate clips"
+      rootPart={PARTS.candidateList}
+      rowPart={PARTS.candidateRow}
+      actionColumnWidth="24px"
+      rowActions={[
+        {
+          key: 'preview',
+          label: '▶',
+          ariaLabel: 'Preview candidate',
+          render: (candidate) => (
             <button
               data-part={PARTS.candidatePreviewBtn}
-              onClick={(e) => {
-                e.stopPropagation();
-                onPreview(c.id);
-              }}
-              aria-label={isPreviewing ? `Stop preview candidate ${c.rank}` : `Preview candidate ${c.rank}`}
-              title={isPreviewing ? 'Stop preview' : 'Preview'}
+              onClick={() => onPreview(candidate.id)}
+              aria-label={previewingId === candidate.id ? `Stop preview candidate ${candidate.rank}` : `Preview candidate ${candidate.rank}`}
+              title={previewingId === candidate.id ? 'Stop preview' : 'Preview'}
             >
-              {isPreviewing ? '■' : '▶'}
+              {previewingId === candidate.id ? '■' : '▶'}
             </button>
-          </div>
-        );
-      })}
-    </div>
+          ),
+        },
+      ]}
+      onSelect={(candidate) => onSelect(candidate.id)}
+      renderCell={(candidate, column) => {
+        switch (column.key) {
+          case 'rank':
+            return <span data-part={PARTS.candidateRank}>{candidate.best ? '★' : `#${candidate.rank}`}</span>;
+          case 'time':
+            return (
+              <span data-part={PARTS.candidateTime}>
+                <span data-part={PARTS.candidateTitle}>{candidate.source_text ?? `Candidate #${candidate.rank}`}</span>
+                <span>{fmt(candidate.start)} → {fmt(candidate.end)}</span>
+              </span>
+            );
+          case 'duration':
+            return <span data-part={PARTS.candidateDuration}>{(candidate.end - candidate.start).toFixed(1)}s</span>;
+          case 'score':
+            return <span data-part={PARTS.candidateScore}>{candidate.score}</span>;
+          case 'badge':
+            return <span data-part={PARTS.candidateBadge}>{candidate.vocal_overlap ? '⚠ vox' : '✓'}{candidate.edited ? ' ✎' : ''}</span>;
+          default:
+            return null;
+        }
+      }}
+    />
   );
 }

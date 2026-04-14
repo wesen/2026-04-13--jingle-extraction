@@ -77,6 +77,14 @@ interface DataListProps<T extends { id: string | number }> {
   ariaLabel?: string;
   /** Additional class on the root */
   className?: string;
+  /** Optional part override for root container */
+  rootPart?: string;
+  /** Optional part override for row */
+  rowPart?: string;
+  /** Optional part override for each cell */
+  cellPart?: string;
+  /** Optional part override for action wrapper */
+  actionPart?: string;
   /** Render a single cell for a given column and item */
   renderCell: (item: T, column: ColumnDef<T>) => ReactNode;
 }
@@ -91,6 +99,10 @@ export function DataList<T extends { id: string | number }>({
   actionColumnWidth,
   ariaLabel = 'List',
   className,
+  rootPart,
+  rowPart,
+  cellPart,
+  actionPart,
   renderCell,
 }: DataListProps<T>) {
   // Compute CSS grid template from column widths.
@@ -107,7 +119,7 @@ export function DataList<T extends { id: string | number }>({
 
   return (
     <div
-      data-part={PARTS.dataList}
+      data-part={rootPart ?? PARTS.dataList}
       role="listbox"
       aria-label={ariaLabel}
       aria-multiselectable={false}
@@ -120,7 +132,7 @@ export function DataList<T extends { id: string | number }>({
         return (
           <div
             key={String(item.id)}
-            data-part={PARTS.dataListRow}
+            data-part={rowPart ?? PARTS.dataListRow}
             role="option"
             aria-selected={isSelected}
             data-previewing={isPreviewing ? 'true' : undefined}
@@ -130,7 +142,7 @@ export function DataList<T extends { id: string | number }>({
             {columns.map((col) => (
               <div
                 key={String(col.key)}
-                data-part={PARTS.dataListCell}
+                data-part={cellPart ?? PARTS.dataListCell}
                 data-col-key={String(col.key)}
                 data-align={col.align ?? 'left'}
                 data-is-action={col.isAction ? 'true' : undefined}
@@ -142,7 +154,7 @@ export function DataList<T extends { id: string | number }>({
 
             {rowActions.length > 0 && (
               <div
-                data-part={PARTS.dataListCell}
+                data-part={cellPart ?? PARTS.dataListCell}
                 data-col-key="__actions__"
                 data-is-action="true"
                 data-align="center"
@@ -154,7 +166,7 @@ export function DataList<T extends { id: string | number }>({
                   return (
                     <span
                       key={action.key}
-                      data-part={PARTS.dataListActionBtn}
+                      data-part={actionPart ?? PARTS.dataListActionBtn}
                       aria-label={action.ariaLabel}
                       onClick={(e) => e.stopPropagation()}
                     >
