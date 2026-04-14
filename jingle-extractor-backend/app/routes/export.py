@@ -2,6 +2,7 @@
 
 import io
 import zipfile
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -11,6 +12,19 @@ from app.database import Database
 from app.models import ExportBatchRequest, ExportRequest
 
 router = APIRouter()
+
+
+def _resolve_stem_source(track: dict, stem: str) -> Path:
+    spath = stem_path(track["id"], stem)
+    if spath.exists():
+        return spath
+
+    if stem == "orig":
+        original_path = Path(track["original_path"])
+        if original_path.exists():
+            return original_path
+
+    return spath
 
 
 def _render_clip(
@@ -43,6 +57,10 @@ def _render_clip(
 async def export_clip(request: ExportRequest):
     """Export a single candidate clip as audio."""
     db = Database()
+    track = db.get_track(request.trackId)
+    if not track:
+        raise HTTPException(status_code=404, detail=f"Track not found: {request.trackId}")
+
     candidates = db.get_candidates(request.trackId)
     cand = next(
         (c for c in candidates if c["candidate_idx"] == request.candidateId), None
@@ -52,7 +70,7 @@ async def export_clip(request: ExportRequest):
             status_code=404, detail=f"Candidate {request.candidateId} not found"
         )
 
-    spath = stem_path(request.trackId, request.stem.value)
+    spath = _resolve_stem_source(track, request.stem.value)
     if not spath.exists():
         raise HTTPException(status_code=404, detail=f"Stem not found: {request.stem}")
 
@@ -85,8 +103,12 @@ async def export_clip(request: ExportRequest):
 async def export_batch(request: ExportBatchRequest):
     """Export multiple candidate clips as a ZIP archive."""
     db = Database()
+    track = db.get_track(request.trackId)
+    if not track:
+        raise HTTPException(status_code=404, detail=f"Track not found: {request.trackId}")
+
     candidates = db.get_candidates(request.trackId)
-    spath = stem_path(request.trackId, request.stem.value)
+    spath = _resolve_stem_source(track, request.stem.value)
 
     if not spath.exists():
         raise HTTPException(status_code=404, detail=f"Stem not found: {request.stem}")

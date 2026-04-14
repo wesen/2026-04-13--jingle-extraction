@@ -56,7 +56,11 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
   const [runAnalysis, { isLoading: isRunning }] = useAnalyzeMutation();
   const [mineCandidates] = useMineCandidatesMutation();
   const [exportClip] = useExportClipMutation();
-  const audioPlayer = useAudioPlayer();
+  const handlePlaybackTimeUpdate = useCallback(
+    (time: number) => dispatch(setPlayhead(time)),
+    [dispatch]
+  );
+  const audioPlayer = useAudioPlayer({ onTimeUpdate: handlePlaybackTimeUpdate });
 
   // ── Event handlers ───────────────────────────────────────────────────
   const handlePresetSelect = useCallback(
@@ -85,14 +89,27 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
     dispatch(applyPreset({ name: 'Default', config: DEFAULT_PRESETS.Default }));
   }, [dispatch]);
 
+  const getStemAudioUrl = useCallback(
+    (s: typeof stem) => `/api/tracks/${encodeURIComponent(trackId)}/audio/${s}`,
+    [trackId]
+  );
+
   const handleStemChange = useCallback(
-    (s: typeof stem) => dispatch(setStem(s)),
-    [dispatch]
+    (s: typeof stem) => {
+      dispatch(setStem(s));
+      if (audioPlayer.isPlaying) {
+        void audioPlayer.playTrack(getStemAudioUrl(s), playhead);
+      }
+    },
+    [audioPlayer, dispatch, getStemAudioUrl, playhead]
   );
 
   const handlePlayheadChange = useCallback(
-    (t: number) => dispatch(setPlayhead(t)),
-    [dispatch]
+    (t: number) => {
+      dispatch(setPlayhead(t));
+      audioPlayer.seekTo(t);
+    },
+    [audioPlayer, dispatch]
   );
 
   const handleCandidateSelect = useCallback(
@@ -222,12 +239,22 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
               playhead={playhead}
               duration={timeline?.duration ?? 0}
               stem={stem}
-              isPlaying={false}
+              isPlaying={audioPlayer.isPlaying}
               onStemChange={handleStemChange}
-              onPlay={() => {}}
-              onPause={() => {}}
-              onSeekBack={() => dispatch(setPlayhead(Math.max(0, playhead - 5)))}
-              onSeekForward={() => dispatch(setPlayhead(Math.min(timeline?.duration ?? 0, playhead + 5)))}
+              onPlay={() => {
+                void audioPlayer.playTrack(getStemAudioUrl(stem), playhead);
+              }}
+              onPause={audioPlayer.pause}
+              onSeekBack={() => {
+                const nextTime = Math.max(0, playhead - 5);
+                dispatch(setPlayhead(nextTime));
+                audioPlayer.seekTo(nextTime);
+              }}
+              onSeekForward={() => {
+                const nextTime = Math.min(timeline?.duration ?? 0, playhead + 5);
+                dispatch(setPlayhead(nextTime));
+                audioPlayer.seekTo(nextTime);
+              }}
             />
           </MacWindow>
 

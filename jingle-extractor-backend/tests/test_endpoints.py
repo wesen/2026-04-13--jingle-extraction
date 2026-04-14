@@ -61,3 +61,25 @@ def test_analysis_returns_202_for_failed_track(client, test_db):
     assert data["track_id"] == "failed_track"
     assert data["status"] == "failed"
     assert data["error_message"] == "pipeline exploded"
+
+
+def test_get_track_audio_returns_stem_file(client, test_db, tmp_path):
+    track_id = "audio_track"
+    test_db.create_track(track_id, "/tmp/audio_track.mp3", status="complete")
+    track_dir = tmp_path / "tracks" / track_id
+    track_dir.mkdir(parents=True, exist_ok=True)
+    stem_file = track_dir / "inst.mp3"
+    stem_file.write_bytes(b"fake mp3 data")
+
+    resp = client.get(f"/api/tracks/{track_id}/audio/inst")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "audio/mpeg"
+    assert resp.content == b"fake mp3 data"
+
+
+def test_get_track_audio_returns_404_for_missing_stem(client, test_db):
+    track_id = "missing_stem_track"
+    test_db.create_track(track_id, "/tmp/missing.mp3", status="complete")
+
+    resp = client.get(f"/api/tracks/{track_id}/audio/orig")
+    assert resp.status_code == 404

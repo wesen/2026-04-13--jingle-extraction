@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import shutil
 import sys
 from pathlib import Path
 from typing import Optional
@@ -90,6 +91,21 @@ def _compute_dynamic_range(rms: np.ndarray) -> float:
     return float(20 * np.log10(peak / floor))
 
 
+def _materialize_original_audio(source: Path, destination: Path) -> None:
+    """Ensure the original track is available as an MP3 for transport playback."""
+    if destination.exists():
+        return
+
+    if source.suffix.lower() == ".mp3":
+        shutil.copy2(source, destination)
+        return
+
+    from pydub import AudioSegment
+
+    audio = AudioSegment.from_file(str(source))
+    audio.export(destination, format="mp3", bitrate="192k")
+
+
 async def run_pipeline(
     track_id: str, audio_path: str, config: AnalysisConfig
 ) -> None:
@@ -106,6 +122,9 @@ async def _run_pipeline_inner(
     tdir.mkdir(parents=True, exist_ok=True)
 
     try:
+        orig_dest = tdir / "orig.mp3"
+        await asyncio.to_thread(_materialize_original_audio, Path(audio_path), orig_dest)
+
         # ── Step 1: Stem Separation ──────────────────────────────────
         db.update_status(track_id, AnalysisStatus.SEPARATING.value)
         logger.info("[%s] Starting Demucs stem separation...", track_id)
