@@ -25,6 +25,11 @@ class ExportFormat(str, Enum):
     WAV = "wav"
 
 
+class CandidateMode(str, Enum):
+    RHYTHMIC = "rhythmic"
+    LYRIC_ALIGNED = "lyric_aligned"
+
+
 class StemType(str, Enum):
     ORIG = "orig"
     INST = "inst"
@@ -111,6 +116,9 @@ class AnalysisConfig(BaseModel):
     max_dur: float = Field(ge=0.1, le=60.0)
     min_score: int = Field(ge=0, le=100)
     vocal_mode: VocalMode = VocalMode.INST
+    candidate_mode: CandidateMode = CandidateMode.RHYTHMIC
+    lyric_padding_before: float = Field(0.5, ge=0.0, le=10.0)
+    lyric_padding_after: float = Field(0.5, ge=0.0, le=10.0)
     atk_w: int = Field(ge=0, le=20)
     end_w: int = Field(ge=0, le=20)
     nrg_w: int = Field(ge=0, le=20)
@@ -128,6 +136,9 @@ class AnalysisConfig(BaseModel):
                 "max_dur": 4.5,
                 "min_score": 75,
                 "vocal_mode": "inst",
+                "candidate_mode": "rhythmic",
+                "lyric_padding_before": 0.5,
+                "lyric_padding_after": 0.5,
                 "atk_w": 6,
                 "end_w": 4,
                 "nrg_w": 3,

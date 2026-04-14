@@ -49,11 +49,15 @@ export function DebugPanel({
         <span> · </span>
         <strong>Mode:</strong> {config.vocal_mode}
         <span> · </span>
+        <strong>Candidate strategy:</strong> {config.candidate_mode}
+        <span> · </span>
         <strong>Duration:</strong> {config.min_dur.toFixed(1)}–{config.max_dur.toFixed(1)}s
         <span> · </span>
         <strong>Min score:</strong> {config.min_score}
         <span> · </span>
         <strong>Fades:</strong> {config.fade_in} / {config.fade_out} ms
+        <span> · </span>
+        <strong>Lyric padding:</strong> {config.lyric_padding_before.toFixed(1)} / {config.lyric_padding_after.toFixed(1)} s
       </div>
 
       <div data-part={PARTS.debugTables}>

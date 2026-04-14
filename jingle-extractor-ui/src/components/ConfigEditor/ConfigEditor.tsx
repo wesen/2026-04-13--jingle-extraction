@@ -54,7 +54,7 @@ export function ConfigEditor({
       const parsed = JSON.parse(value) as unknown;
       if (isAnalysisConfig(parsed)) {
         setError(null);
-        onChange(parsed);
+        onChange(normalizeAnalysisConfig(parsed));
       } else {
         setError('Invalid config shape');
       }
@@ -112,7 +112,7 @@ export function ConfigEditor({
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function isAnalysisConfig(value: unknown): value is AnalysisConfig {
+function isAnalysisConfig(value: unknown): value is Partial<AnalysisConfig> {
   if (typeof value !== 'object' || value === null) return false;
   const obj = value as Record<string, unknown>;
   return (
@@ -124,4 +124,13 @@ function isAnalysisConfig(value: unknown): value is AnalysisConfig {
     typeof obj.fade_in === 'number' &&
     typeof obj.fade_out === 'number'
   );
+}
+
+function normalizeAnalysisConfig(value: Partial<AnalysisConfig>): AnalysisConfig {
+  return {
+    candidate_mode: 'rhythmic',
+    lyric_padding_before: 0.5,
+    lyric_padding_after: 0.5,
+    ...value,
+  } as AnalysisConfig;
 }

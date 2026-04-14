@@ -3,7 +3,7 @@ Preset configurations for jingle mining.
 These match the MSW handlers in jingle-extractor-ui/src/mocks/handlers.ts.
 """
 
-from app.models import AnalysisConfig, VocalMode, ExportFormat
+from app.models import AnalysisConfig, CandidateMode, VocalMode, ExportFormat
 
 PRESETS: dict[str, AnalysisConfig] = {
     "Default": AnalysisConfig(
@@ -11,6 +11,9 @@ PRESETS: dict[str, AnalysisConfig] = {
         max_dur=4.5,
         min_score=75,
         vocal_mode=VocalMode.INST,
+        candidate_mode=CandidateMode.RHYTHMIC,
+        lyric_padding_before=0.5,
+        lyric_padding_after=0.5,
         atk_w=6,
         end_w=4,
         nrg_w=3,
@@ -26,6 +29,9 @@ PRESETS: dict[str, AnalysisConfig] = {
         max_dur=2.5,
         min_score=80,
         vocal_mode=VocalMode.ANY,
+        candidate_mode=CandidateMode.RHYTHMIC,
+        lyric_padding_before=0.5,
+        lyric_padding_after=0.5,
         atk_w=8,
         end_w=5,
         nrg_w=4,
@@ -41,6 +47,9 @@ PRESETS: dict[str, AnalysisConfig] = {
         max_dur=8.0,
         min_score=60,
         vocal_mode=VocalMode.INST,
+        candidate_mode=CandidateMode.RHYTHMIC,
+        lyric_padding_before=0.5,
+        lyric_padding_after=0.5,
         atk_w=2,
         end_w=2,
         nrg_w=5,
@@ -54,8 +63,11 @@ PRESETS: dict[str, AnalysisConfig] = {
     "Vocal Hooks": AnalysisConfig(
         min_dur=0.5,
         max_dur=4.0,
-        min_score=70,
+        min_score=35,
         vocal_mode=VocalMode.VOCAL,
+        candidate_mode=CandidateMode.LYRIC_ALIGNED,
+        lyric_padding_before=0.5,
+        lyric_padding_after=0.5,
         atk_w=3,
         end_w=3,
         nrg_w=2,

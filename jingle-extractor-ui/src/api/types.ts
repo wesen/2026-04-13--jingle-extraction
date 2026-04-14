@@ -64,12 +64,16 @@ export interface CandidateQuality {
 
 export type VocalMode = 'any' | 'inst' | 'vocal';
 export type ExportFormat = 'mp3' | 'wav';
+export type CandidateMode = 'rhythmic' | 'lyric_aligned';
 
 export interface AnalysisConfig {
   min_dur: number; // seconds
   max_dur: number; // seconds
   min_score: number; // 0–100
   vocal_mode: VocalMode;
+  candidate_mode: CandidateMode;
+  lyric_padding_before: number; // seconds
+  lyric_padding_after: number; // seconds
   atk_w: number; // attack weight
   end_w: number; // ending weight
   nrg_w: number; // energy weight

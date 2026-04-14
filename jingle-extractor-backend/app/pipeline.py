@@ -21,20 +21,13 @@ from jingle_extractor import (
     analyze_rhythm,
     demucs_split,
     extract_words,
-    mine_candidates,
     whisperx_transcribe,
 )
 
 from app.config import track_dir
 from app.database import Database
 from app.models import AnalysisConfig, AnalysisStatus
-from app.scoring import (
-    check_vocal_overlap,
-    compute_attack_score,
-    compute_beat_score,
-    compute_ending_score,
-    compute_energy_score,
-)
+from app.services.candidate_mining import mine_candidate_rows
 
 logger = logging.getLogger(__name__)
 
@@ -204,14 +197,6 @@ async def _run_pipeline_inner(
         db.update_status(track_id, AnalysisStatus.MINING.value)
         logger.info("[%s] Mining candidates...", track_id)
 
-        raw_candidates = await asyncio.to_thread(
-            mine_candidates,
-            inst_dest,
-            min_len=config.min_dur,
-            max_len=config.max_dur,
-            top_n=config.max_cand * 3,  # mine extra, then filter/score
-        )
-
         # ── Step 8: Score and rank ───────────────────────────────────
         beat_arr = rhythm["beat_times"]
         onset_arr = rhythm["onset_times"]
@@ -219,49 +204,20 @@ async def _run_pipeline_inner(
         sr = rhythm["sr"]
         hop = rhythm["hop"]
 
-        candidates = []
-        for i, raw in enumerate(raw_candidates):
-            attack = compute_attack_score(raw.start, onset_arr)
-            ending = compute_ending_score(raw.end, onset_arr, beat_arr, rms_arr, sr, hop)
-            energy = compute_energy_score(raw.start, raw.end, rms_arr, sr, hop)
-            beat = compute_beat_score(raw.start, raw.end, beat_arr)
-
-            total_weight = config.atk_w + config.end_w + config.nrg_w + config.beat_w
-            overall = (
-                (attack * config.atk_w + ending * config.end_w + energy * config.nrg_w + beat * config.beat_w)
-                / total_weight
-                if total_weight > 0
-                else 0
-            )
-
-            overlap = check_vocal_overlap(raw.start, raw.end, vocal_segments)
-
-            if overall < config.min_score:
-                continue
-            if config.vocal_mode == "inst" and overlap:
-                continue
-            if config.vocal_mode == "vocal" and not overlap:
-                continue
-
-            candidates.append({
-                "idx": i + 1,
-                "start": raw.start,
-                "end": raw.end,
-                "score": int(overall),
-                "attack": int(attack),
-                "ending": int(ending),
-                "energy": int(energy),
-                "vocal_overlap": overlap,
-            })
-
-        candidates.sort(key=lambda c: c["score"], reverse=True)
-        for rank, cand in enumerate(candidates[: config.max_cand], start=1):
-            cand["rank"] = rank
-            cand["best"] = rank == 1
+        candidates = mine_candidate_rows(
+            config=config,
+            track_duration=rhythm["duration"],
+            beats=beat_arr,
+            onsets=onset_arr,
+            rms=rms_arr,
+            sr=sr,
+            hop=hop,
+            vocal_segments=vocal_segments,
+        )
 
         # ── Step 9: Store candidates ─────────────────────────────────
         db.delete_candidates(track_id)
-        for cand in candidates[: config.max_cand]:
+        for cand in candidates:
             db.insert_candidate(
                 track_id,
                 candidate_idx=cand["idx"],
