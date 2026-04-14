@@ -62,7 +62,7 @@
 #### Stem support
 - [x] Decide whether `orig` should remain a visible stem option in the transport
 - [x] If yes, ensure the backend materializes or serves an original normalized file for each track
-- [ ] Validate preview/export behavior for `orig`, `inst`, and `vox`
+- [x] Validate preview/export behavior for `orig`, `inst`, and `vox`
 - [x] Add a backend test for missing-stem behavior and successful stem resolution
 
 ### Phase 3 — Candidate editing and timeline semantics

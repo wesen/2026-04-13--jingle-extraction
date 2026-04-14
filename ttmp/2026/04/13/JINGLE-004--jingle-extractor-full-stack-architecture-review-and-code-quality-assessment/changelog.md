@@ -87,3 +87,12 @@ Added the first frontend interaction tests for playback: timeline background cli
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx — Timeline click interaction regression test
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/TransportBar/TransportBar.playback.test.tsx — Transport playback/playhead interaction regression test
 
+
+## 2026-04-13
+
+Closed the remaining playback/stem validation gap by adding a ticket-local export validation script and confirming that orig, inst, and vox all export successfully with non-empty MP3 output in the runtime environment.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/ttmp/2026/04/13/JINGLE-004--jingle-extractor-full-stack-architecture-review-and-code-quality-assessment/scripts/validate_export_stems.py — Ticket-local validation script for export behavior across all stems
+

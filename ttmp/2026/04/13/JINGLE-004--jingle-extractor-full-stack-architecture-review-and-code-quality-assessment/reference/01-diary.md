@@ -41,12 +41,15 @@ RelatedFiles:
         Playback controller refactor and event model implemented in Step 10
     - Path: jingle-extractor-ui/vitest.config.ts
       Note: Minimal Vitest configuration added to run source tests without Storybook include patterns
+    - Path: ttmp/2026/04/13/JINGLE-004--jingle-extractor-full-stack-architecture-review-and-code-quality-assessment/scripts/validate_export_stems.py
+      Note: Step 12 runtime validation script for export across all stems
 ExternalSources: []
 Summary: Chronological investigation diary for the full-stack architecture review, including repo discovery, validation commands, key findings, and delivery steps.
 LastUpdated: 2026-04-13T21:48:00-04:00
 WhatFor: Capture how the review was performed, what evidence was gathered, what validation passed or failed, and how to continue the investigation later.
 WhenToUse: Use when continuing the JINGLE-004 review, verifying claims in the design doc, or replaying the investigation commands.
 ---
+
 
 
 
@@ -1222,3 +1225,99 @@ That keeps the tests resilient and aligned with the actual tasks they are meant 
   - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx`
   - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/TransportBar/TransportBar.playback.test.tsx`
 - Tasks completed in this step: 35, 36
+
+## Step 12: Validate preview/export behavior for `orig`, `inst`, and `vox`
+
+The last remaining task in the immediate playback/stem-support cluster was explicit validation that preview/export behavior works across all three visible stem modes: `orig`, `inst`, and `vox`. Rather than relying on the state of the long-running backend session on port 8000, I created a ticket-local validation script that builds a temporary database and temporary stem files, then exercises the export route directly inside the backend runtime.
+
+This approach was more reliable than live-manual testing because it controls the DB state, the available files, and the candidate row all in one place.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 7)
+
+**Assistant interpretation:** Finish the remaining validation gap in the playback/stem-support area and record the exact commands and failures encountered along the way.
+
+**Inferred user intent:** The user wants the task list closed with real evidence, not assumptions that the newly added `orig`/stem support “probably works.”
+
+**Commit (code):** N/A
+
+### What I did
+- Added a ticket-local validation script at:
+  - `ttmp/2026/04/13/JINGLE-004--jingle-extractor-full-stack-architecture-review-and-code-quality-assessment/scripts/validate_export_stems.py`
+- The script:
+  - patches backend `DATA_DIR` to a temporary directory
+  - creates a temporary SQLite DB
+  - generates silent MP3 files for `orig`, `inst`, and `vox`
+  - inserts a candidate row into the database
+  - calls the backend export route directly for each stem
+  - asserts non-empty `audio/mpeg` output for each case
+- Ran:
+  ```bash
+  cd /home/manuel/code/wesen/2026-04-13--jingle-extraction
+  .venv/bin/python ttmp/2026/04/13/JINGLE-004--jingle-extractor-full-stack-architecture-review-and-code-quality-assessment/scripts/validate_export_stems.py
+  ```
+- Marked task 39 complete
+
+### Why
+- The live backend session did not have stable track state for manual verification.
+- A deterministic ticket-local validation script is easier to rerun later than a hand-executed sequence of `curl` and DB assumptions.
+- The validation needed to exercise the actual backend export implementation, not just frontend wiring.
+
+### What worked
+- The final validation script succeeded with:
+  ```text
+  orig: ok (10284 bytes)
+  inst: ok (10284 bytes)
+  vox: ok (10284 bytes)
+  ```
+- The script lives under the ticket’s `scripts/` directory, so it is preserved as repeatable evidence.
+
+### What didn't work
+- The first script attempt failed because Python could not import the backend package:
+  ```text
+  ModuleNotFoundError: No module named 'app'
+  ```
+  I fixed this by prepending `jingle-extractor-backend/` to `sys.path` inside the script.
+- The second attempt failed because `.venv` did not have `httpx`, which `fastapi.testclient` requires through Starlette:
+  ```text
+  RuntimeError: The starlette.testclient module requires the httpx package to be installed.
+  ```
+  Instead of installing more packages into the runtime venv, I rewrote the script to call `app.routes.export.export_clip(...)` directly and consume the `StreamingResponse.body_iterator` asynchronously.
+
+### What I learned
+- For backend validation in this project, a direct in-process route call can be simpler and more reliable than forcing `TestClient` into an environment that is not fully provisioned for it.
+- Keeping ticket-local scripts under `ttmp/.../scripts/` is useful; it turns a one-off debugging trick into a reusable validation artifact.
+- The `orig`/`inst`/`vox` export path is now validated independently of the live backend’s current DB contents.
+
+### What was tricky to build
+
+The tricky part was not the export logic itself but the validation environment. The repo currently has two Python realities:
+
+- system `python3`, which has `pytest` for the lightweight backend tests,
+- project `.venv`, which has the heavier runtime/media packages like `pydub` but is missing some test-only dependencies like `httpx`.
+
+That split makes ad hoc validation slightly awkward. The direct async route-call approach turned out to be the cleanest compromise because it uses the runtime environment that actually has the audio dependencies without forcing a package install just to run a temporary validation.
+
+### What warrants a second pair of eyes
+- Whether `httpx` should be installed into `.venv` so future in-venv TestClient-based validations are easier
+- Whether the export validation script should eventually evolve into a real backend test once the backend test environment is unified
+
+### What should be done in the future
+- Revisit the backend Python environment split and decide whether one environment should become canonical for all tests
+- Convert the stem export validation into a normal automated test if/when `.venv` and `pytest`/`httpx` are aligned
+
+### Code review instructions
+- Read the script:
+  - `ttmp/2026/04/13/JINGLE-004--jingle-extractor-full-stack-architecture-review-and-code-quality-assessment/scripts/validate_export_stems.py`
+- Re-run:
+  ```bash
+  cd /home/manuel/code/wesen/2026-04-13--jingle-extraction
+  .venv/bin/python ttmp/2026/04/13/JINGLE-004--jingle-extractor-full-stack-architecture-review-and-code-quality-assessment/scripts/validate_export_stems.py
+  ```
+- Confirm the script prints successful non-empty output for `orig`, `inst`, and `vox`.
+
+### Technical details
+- File added in this step:
+  - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/ttmp/2026/04/13/JINGLE-004--jingle-extractor-full-stack-architecture-review-and-code-quality-assessment/scripts/validate_export_stems.py`
+- Task completed in this step: 39
