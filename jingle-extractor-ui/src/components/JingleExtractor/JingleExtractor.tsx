@@ -7,7 +7,7 @@
  * - Composes: MenuBar + (Sidebar: PresetPanel + ConfigEditor) + (Main: TransportBar + Timeline + (Bottom: CandidateList | CandidateDetail))
  */
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useAnalyzeMutation, useGetAnalysisQuery, useMineCandidatesMutation, useExportClipMutation } from '../../api/jingleApi';
 import { useAppDispatch, useAppSelector } from '../../hooks/useRedux';
 import { useAudioPlayer } from '../../hooks/useAudioPlayer';
@@ -28,7 +28,7 @@ import { CandidateList } from '../CandidateList';
 import { CandidateDetail } from '../CandidateDetail';
 import { DEFAULT_PRESETS } from '../../utils/constants';
 import { PARTS } from './parts';
-import type { PresetName } from '../../api/types';
+import { isAnalysisCompleteResponse, type PresetName } from '../../api/types';
 import './JingleExtractor.css';
 
 interface JingleExtractorProps {
@@ -47,7 +47,12 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
   const config = useAppSelector((s) => s.analysis.config);
 
   // ── RTK Query ────────────────────────────────────────────────────────
-  const { data: analysis, isLoading, isError } = useGetAnalysisQuery(trackId);
+  const {
+    data: analysis,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetAnalysisQuery(trackId);
   const [runAnalysis, { isLoading: isRunning }] = useAnalyzeMutation();
   const [mineCandidates] = useMineCandidatesMutation();
   const [exportClip] = useExportClipMutation();
@@ -107,20 +112,35 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
   );
 
   // ── Derived data (must be before handlers that reference candidates) ──
-  const track = analysis?.track;
-  const timeline = analysis?.timeline;
-  const vocals = analysis?.vocals?.segments ?? [];
-  const candidates = analysis?.candidates ?? [];
+  const analysisComplete = isAnalysisCompleteResponse(analysis);
+  const track = analysisComplete ? analysis.track : null;
+  const timeline = analysisComplete ? analysis.timeline : null;
+  const vocals = analysisComplete ? analysis.vocals.segments : [];
+  const candidates = analysisComplete ? analysis.candidates : [];
+  const analysisStatus = !analysisComplete ? analysis?.status ?? null : null;
+  const analysisErrorMessage = !analysisComplete ? analysis?.error_message ?? null : null;
 
   const selectedCandidate = candidates.find((c) => c.id === selectedId) ?? null;
   const presetNames = Object.keys(DEFAULT_PRESETS) as PresetName[];
+
+  useEffect(() => {
+    if (!analysisStatus || analysisStatus === 'complete' || analysisStatus === 'failed') {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void refetch();
+    }, 1500);
+
+    return () => window.clearTimeout(timer);
+  }, [analysisStatus, refetch]);
 
   // ── Handlers that reference derived data ──────────────────────────────
   const handlePreview = useCallback(
     async (id: number) => {
       const cand = candidates.find((c) => c.id === id);
       if (!cand) return;
-      audioPlayer.play('/api/export', {
+      audioPlayer.playClip('/api/export', {
         trackId,
         candidateId: cand.id,
         stem,
@@ -229,7 +249,18 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
             >
               {isLoading && <div style={{ padding: 16 }}>Loading...</div>}
               {isError && <div style={{ padding: 16 }}>Failed to load analysis.</div>}
-              {!isLoading && !isError && (
+              {!isLoading && !isError && analysisStatus && analysisStatus !== 'complete' && (
+                <div style={{ padding: 16 }}>
+                  <div><strong>Status:</strong> {analysisStatus}</div>
+                  {analysisErrorMessage && (
+                    <div style={{ marginTop: 8 }}><strong>Error:</strong> {analysisErrorMessage}</div>
+                  )}
+                  {analysisStatus !== 'failed' && (
+                    <div style={{ marginTop: 8 }}>Polling for updated analysis results…</div>
+                  )}
+                </div>
+              )}
+              {!isLoading && !isError && analysisComplete && (
                 <CandidateList
                   candidates={candidates}
                   selectedId={selectedId}

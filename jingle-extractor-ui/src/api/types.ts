@@ -93,6 +93,34 @@ export interface AnalysisResponse {
   candidates: Candidate[];
 }
 
+export type AnalysisStatus =
+  | 'uploaded'
+  | 'separating_stems'
+  | 'transcribing'
+  | 'analyzing_rhythm'
+  | 'mining_candidates'
+  | 'complete'
+  | 'failed';
+
+export interface AnalyzeAcceptedResponse {
+  track_id: string;
+  status: AnalysisStatus;
+}
+
+export interface AnalysisPendingResponse {
+  track_id: string;
+  status: AnalysisStatus;
+  error_message?: string | null;
+}
+
+export type GetAnalysisResponse = AnalysisResponse | AnalysisPendingResponse;
+
+export function isAnalysisCompleteResponse(
+  value: GetAnalysisResponse | undefined
+): value is AnalysisResponse {
+  return !!value && 'track' in value;
+}
+
 // ─── Stem / Audio ────────────────────────────────────────────────────────────
 
 export type StemType = 'orig' | 'inst' | 'vox';

@@ -1,4 +1,4 @@
-"""Tests for GET /api/presets and GET /api/tracks."""
+"""Tests for GET /api/presets, GET /api/tracks, and analysis status responses."""
 
 
 def test_get_presets(client):
@@ -38,3 +38,26 @@ def test_analyze_file_not_found(client, default_config):
 def test_analysis_not_found(client):
     resp = client.get("/api/analysis/nonexistent_track")
     assert resp.status_code == 404
+
+
+def test_analysis_returns_202_for_in_progress_track(client, test_db):
+    test_db.create_track("pending_track", "/tmp/pending.mp3", status="uploaded")
+
+    resp = client.get("/api/analysis/pending_track")
+    assert resp.status_code == 202
+    data = resp.json()
+    assert data["track_id"] == "pending_track"
+    assert data["status"] == "uploaded"
+    assert data["error_message"] is None
+
+
+def test_analysis_returns_202_for_failed_track(client, test_db):
+    test_db.create_track("failed_track", "/tmp/failed.mp3", status="uploaded")
+    test_db.update_status("failed_track", "failed", error_message="pipeline exploded")
+
+    resp = client.get("/api/analysis/failed_track")
+    assert resp.status_code == 202
+    data = resp.json()
+    assert data["track_id"] == "failed_track"
+    assert data["status"] == "failed"
+    assert data["error_message"] == "pipeline exploded"

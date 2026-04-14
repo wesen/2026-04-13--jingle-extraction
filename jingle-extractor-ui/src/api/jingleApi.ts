@@ -5,9 +5,10 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type {
   AnalysisConfig,
-  AnalysisResponse,
+  AnalyzeAcceptedResponse,
   Candidate,
   ExportFormat,
+  GetAnalysisResponse,
   Presets,
   StemType,
   Track,
@@ -41,9 +42,12 @@ export interface ExportBatchRequest {
 
 // ─── API definition ─────────────────────────────────────────────────────────
 
+const API_BASE_URL =
+  typeof window === 'undefined' ? 'http://localhost/api/' : '/api/';
+
 export const jingleApi = createApi({
   reducerPath: 'jingleApi',
-  baseQuery: fetchBaseQuery({ baseUrl: '/api/' }),
+  baseQuery: fetchBaseQuery({ baseUrl: API_BASE_URL }),
   tagTypes: ['Analysis', 'Candidates', 'Tracks', 'Presets'],
   endpoints: (builder) => ({
     // ── Analysis ────────────────────────────────────────────────────────────
@@ -53,7 +57,7 @@ export const jingleApi = createApi({
      * Run the full analysis pipeline on an audio file.
      * Returns track metadata, timeline data, vocals, and initial candidates.
      */
-    analyze: builder.mutation<AnalysisResponse, AnalyzeRequest>({
+    analyze: builder.mutation<AnalyzeAcceptedResponse, AnalyzeRequest>({
       query: (body) => ({
         url: 'analyze',
         method: 'POST',
@@ -66,7 +70,7 @@ export const jingleApi = createApi({
      * GET /api/analysis/:trackId
      * Retrieve previously computed analysis results.
      */
-    getAnalysis: builder.query<AnalysisResponse, string>({
+    getAnalysis: builder.query<GetAnalysisResponse, string>({
       query: (trackId) => `analysis/${encodeURIComponent(trackId)}`,
       providesTags: ['Analysis'],
     }),
