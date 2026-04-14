@@ -18,6 +18,8 @@ interface ExportParams {
   fade_in: number;
   fade_out: number;
   br: number | null;
+  start?: number;
+  end?: number;
 }
 
 interface UseAudioPlayerOptions {

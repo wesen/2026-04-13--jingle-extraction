@@ -45,8 +45,9 @@ const analysisSlice = createSlice({
     },
     setConfig(state, action: PayloadAction<AnalysisConfig>) {
       state.config = action.payload;
-      // Clear preset selection when manually editing config
+      // Clear preset selection and any local candidate edits when manually editing config
       state.activePreset = null;
+      state.editedCandidates = {};
     },
     setTheme(state, action: PayloadAction<ThemeId>) {
       state.theme = action.payload;
@@ -54,6 +55,7 @@ const analysisSlice = createSlice({
     applyPreset(state, action: PayloadAction<{ name: PresetName; config: AnalysisConfig }>) {
       state.activePreset = action.payload.name;
       state.config = action.payload.config;
+      state.editedCandidates = {};
     },
     updateCandidateStart(
       state,
@@ -78,6 +80,9 @@ const analysisSlice = createSlice({
     clearCandidateEdit(state, action: PayloadAction<number>) {
       delete state.editedCandidates[action.payload];
     },
+    clearAllCandidateEdits(state) {
+      state.editedCandidates = {};
+    },
     resetAll(state) {
       state.selectedCandidateId = null;
       state.playhead = 0;
@@ -100,6 +105,7 @@ export const {
   updateCandidateStart,
   updateCandidateEnd,
   clearCandidateEdit,
+  clearAllCandidateEdits,
   resetAll,
 } = analysisSlice.actions;
 

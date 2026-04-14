@@ -6,16 +6,19 @@
  */
 
 import type { Candidate, StemType } from '../../api/types';
+
+type DisplayCandidate = Candidate & { edited?: boolean };
 import { fmt } from '../../utils/format';
 import { ScoreBar } from '../ScoreBar';
 import { PARTS } from '../JingleExtractor/parts';
 import './CandidateDetail.css';
 
 interface CandidateDetailProps {
-  candidate: Candidate;
+  candidate: DisplayCandidate;
   stem: StemType;
   onPreview: () => void;
   onExport: () => void;
+  onResetEdit: () => void;
 }
 
 export function CandidateDetail({
@@ -23,6 +26,7 @@ export function CandidateDetail({
   stem,
   onPreview,
   onExport,
+  onResetEdit,
 }: CandidateDetailProps) {
   const duration = candidate.end - candidate.start;
 
@@ -81,6 +85,11 @@ export function CandidateDetail({
           <span data-part={PARTS.contextLabel}>Stem</span>
           <span data-part={PARTS.contextValue}>{stem}</span>
         </div>
+
+        <div data-part={PARTS.contextItem}>
+          <span data-part={PARTS.contextLabel}>Local edit</span>
+          <span data-part={PARTS.contextValue}>{candidate.edited ? '✎ Yes' : '—'}</span>
+        </div>
       </div>
 
       {/* Action buttons */}
@@ -91,6 +100,11 @@ export function CandidateDetail({
         <button data-part={PARTS.exportButton} onClick={onExport}>
           ⬇ Export
         </button>
+        {candidate.edited && (
+          <button data-part={PARTS.resetButton} onClick={onResetEdit}>
+            Reset Edit
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,22 +1,25 @@
 /**
  * JingleExtractor.tsx — Root widget composing all JingleExtractor components.
  *
- * This is the main public entrypoint. It:
- * - Reads analysis state from Redux (selectedCandidate, playhead, stem, config, theme)
- * - Reads analysis data from RTK Query (track, timeline, vocals, candidates)
- * - Composes: MenuBar + (Sidebar: PresetPanel + ConfigEditor) + (Main: TransportBar + Timeline + (Bottom: CandidateList | CandidateDetail))
+ * Playback model:
+ * - useAudioPlayer owns the live HTMLAudioElement lifecycle.
+ * - Redux stores projected UI state such as playhead, selected candidate, stem, and config.
+ * - Candidate timeline edits are local-only until a future explicit persistence API exists.
  */
 
-import { useCallback, useEffect } from 'react';
-import { useAnalyzeMutation, useGetAnalysisQuery, useMineCandidatesMutation, useExportClipMutation } from '../../api/jingleApi';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useAnalyzeMutation, useGetAnalysisQuery, useExportClipMutation } from '../../api/jingleApi';
 import { useAppDispatch, useAppSelector } from '../../hooks/useRedux';
 import { useAudioPlayer } from '../../hooks/useAudioPlayer';
 import {
   applyPreset,
+  clearCandidateEdit,
   setConfig,
   setPlayhead,
   setSelectedCandidate,
   setStem,
+  updateCandidateEnd,
+  updateCandidateStart,
 } from '../../features/analysis/analysisSlice';
 import { MacWindow } from '../MacWindow';
 import { MenuBar } from '../MenuBar';
@@ -28,13 +31,14 @@ import { CandidateList } from '../CandidateList';
 import { CandidateDetail } from '../CandidateDetail';
 import { DEFAULT_PRESETS } from '../../utils/constants';
 import { PARTS } from './parts';
-import { isAnalysisCompleteResponse, type PresetName } from '../../api/types';
+import { isAnalysisCompleteResponse, type Candidate, type PresetName } from '../../api/types';
 import './JingleExtractor.css';
 
 interface JingleExtractorProps {
-  /** Track ID to load. Defaults to 'thrash_metal_01' for demo. */
   trackId?: string;
 }
+
+type DisplayCandidate = Candidate & { edited?: boolean };
 
 export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractorProps) {
   const dispatch = useAppDispatch();
@@ -45,6 +49,14 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
   const stem = useAppSelector((s) => s.analysis.stem);
   const activePreset = useAppSelector((s) => s.analysis.activePreset);
   const config = useAppSelector((s) => s.analysis.config);
+  const editedCandidates = useAppSelector((s) => s.analysis.editedCandidates);
+
+  const handlePlaybackTimeUpdate = useCallback(
+    (time: number) => dispatch(setPlayhead(time)),
+    [dispatch]
+  );
+
+  const audioPlayer = useAudioPlayer({ onTimeUpdate: handlePlaybackTimeUpdate });
 
   // ── RTK Query ────────────────────────────────────────────────────────
   const {
@@ -54,13 +66,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
     refetch,
   } = useGetAnalysisQuery(trackId);
   const [runAnalysis, { isLoading: isRunning }] = useAnalyzeMutation();
-  const [mineCandidates] = useMineCandidatesMutation();
   const [exportClip] = useExportClipMutation();
-  const handlePlaybackTimeUpdate = useCallback(
-    (time: number) => dispatch(setPlayhead(time)),
-    [dispatch]
-  );
-  const audioPlayer = useAudioPlayer({ onTimeUpdate: handlePlaybackTimeUpdate });
 
   // ── Event handlers ───────────────────────────────────────────────────
   const handlePresetSelect = useCallback(
@@ -106,6 +112,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
 
   const handlePlayheadChange = useCallback(
     (t: number) => {
+      // Timeline clicks reposition playback, but do not auto-start playback.
       dispatch(setPlayhead(t));
       audioPlayer.seekTo(t);
     },
@@ -118,17 +125,17 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
   );
 
   const handleCandidateUpdate = useCallback(
-    async (_id: number, _edge: 'start' | 'end', _time: number) => {
-      try {
-        await mineCandidates({ trackId, config }).unwrap();
-      } catch {
-        // ignore
+    (id: number, edge: 'start' | 'end', time: number) => {
+      if (edge === 'start') {
+        dispatch(updateCandidateStart({ id, start: time }));
+      } else {
+        dispatch(updateCandidateEnd({ id, end: time }));
       }
     },
-    [mineCandidates, trackId, config]
+    [dispatch]
   );
 
-  // ── Derived data (must be before handlers that reference candidates) ──
+  // ── Derived data ─────────────────────────────────────────────────────
   const analysisComplete = isAnalysisCompleteResponse(analysis);
   const track = analysisComplete ? analysis.track : null;
   const timeline = analysisComplete ? analysis.timeline : null;
@@ -137,7 +144,19 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
   const analysisStatus = !analysisComplete ? analysis?.status ?? null : null;
   const analysisErrorMessage = !analysisComplete ? analysis?.error_message ?? null : null;
 
-  const selectedCandidate = candidates.find((c) => c.id === selectedId) ?? null;
+  const visibleCandidates = useMemo<DisplayCandidate[]>(() => {
+    return candidates.map((candidate) => {
+      const overrides = editedCandidates[candidate.id];
+      return {
+        ...candidate,
+        start: overrides?.start ?? candidate.start,
+        end: overrides?.end ?? candidate.end,
+        edited: !!overrides,
+      };
+    });
+  }, [candidates, editedCandidates]);
+
+  const selectedCandidate = visibleCandidates.find((c) => c.id === selectedId) ?? null;
   const presetNames = Object.keys(DEFAULT_PRESETS) as PresetName[];
 
   useEffect(() => {
@@ -155,9 +174,10 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
   // ── Handlers that reference derived data ──────────────────────────────
   const handlePreview = useCallback(
     async (id: number) => {
-      const cand = candidates.find((c) => c.id === id);
+      const cand = visibleCandidates.find((c) => c.id === id);
       if (!cand) return;
-      audioPlayer.playClip('/api/export', {
+
+      await audioPlayer.playClip('/api/export', {
         trackId,
         candidateId: cand.id,
         stem,
@@ -165,15 +185,18 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
         fade_in: config.fade_in,
         fade_out: config.fade_out,
         br: config.br,
+        start: cand.start,
+        end: cand.end,
       });
     },
-    [audioPlayer, candidates, config.br, config.fade_in, config.fade_out, config.fmt, trackId, stem]
+    [audioPlayer, config.br, config.fade_in, config.fade_out, config.fmt, trackId, stem, visibleCandidates]
   );
 
   const handleExport = useCallback(
     async (id: number) => {
-      const cand = candidates.find((c) => c.id === id);
+      const cand = visibleCandidates.find((c) => c.id === id);
       if (!cand) return;
+
       try {
         const blob = await exportClip({
           trackId,
@@ -183,6 +206,8 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
           fade_in: config.fade_in,
           fade_out: config.fade_out,
           br: config.br,
+          start: cand.start,
+          end: cand.end,
         }).unwrap();
         const url = URL.createObjectURL(blob as Blob);
         const a = document.createElement('a');
@@ -194,19 +219,14 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
         console.error('Export failed:', e);
       }
     },
-    [config.br, config.fade_in, config.fade_out, config.fmt, exportClip, candidates, trackId, stem]
+    [config.br, config.fade_in, config.fade_out, config.fmt, exportClip, trackId, stem, visibleCandidates]
   );
 
   return (
     <div data-part={PARTS.root}>
-      {/* Menu bar */}
-      {track && (
-        <MenuBar track={track} />
-      )}
+      {track && <MenuBar track={track} />}
 
-      {/* Main layout */}
       <div data-part={PARTS.mainLayout}>
-        {/* Sidebar */}
         <aside data-part={PARTS.sidebar}>
           <MacWindow title="Presets">
             <PresetPanel
@@ -231,9 +251,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
           </MacWindow>
         </aside>
 
-        {/* Main panel */}
         <div data-part={PARTS.mainPanel}>
-          {/* Transport */}
           <MacWindow title="Transport" style={{ flexShrink: 0 }}>
             <TransportBar
               playhead={playhead}
@@ -258,12 +276,11 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
             />
           </MacWindow>
 
-          {/* Timeline */}
           {timeline && (
             <MacWindow title="Timeline — drag handles ◀ ▶ to resize candidates" style={{ flexShrink: 0 }}>
               <Timeline
                 data={timeline}
-                candidates={candidates}
+                candidates={visibleCandidates}
                 vocals={vocals}
                 selectedId={selectedId}
                 playhead={playhead}
@@ -274,12 +291,8 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
             </MacWindow>
           )}
 
-          {/* Bottom: candidates + detail */}
           <div data-part={PARTS.bottomPanel}>
-            <MacWindow
-              title="Candidates"
-              bodyStyle={{ overflowY: 'auto' }}
-            >
+            <MacWindow title="Candidates" bodyStyle={{ overflowY: 'auto' }}>
               {isLoading && <div style={{ padding: 16 }}>Loading...</div>}
               {isError && <div style={{ padding: 16 }}>Failed to load analysis.</div>}
               {!isLoading && !isError && analysisStatus && analysisStatus !== 'complete' && (
@@ -295,7 +308,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
               )}
               {!isLoading && !isError && analysisComplete && (
                 <CandidateList
-                  candidates={candidates}
+                  candidates={visibleCandidates}
                   selectedId={selectedId}
                   onSelect={handleCandidateSelect}
                   onPreview={handlePreview}
@@ -313,6 +326,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
                   stem={stem}
                   onPreview={() => handlePreview(selectedCandidate.id)}
                   onExport={() => handleExport(selectedCandidate.id)}
+                  onResetEdit={() => dispatch(clearCandidateEdit(selectedCandidate.id))}
                 />
               </MacWindow>
             )}

@@ -78,10 +78,13 @@ async def export_clip(request: ExportRequest):
 
     audio = AudioSegment.from_file(str(spath))
     fmt = request.fmt.value
+    start_time = request.start if request.start is not None else cand["start_time"]
+    end_time = request.end if request.end is not None else cand["end_time"]
+
     clip_bytes = _render_clip(
         audio,
-        cand["start_time"],
-        cand["end_time"],
+        start_time,
+        end_time,
         fmt,
         fade_in=request.fade_in,
         fade_out=request.fade_out,

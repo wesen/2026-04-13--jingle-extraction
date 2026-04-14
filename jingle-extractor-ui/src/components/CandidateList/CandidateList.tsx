@@ -6,12 +6,14 @@
  */
 
 import type { Candidate } from '../../api/types';
+
+type DisplayCandidate = Candidate & { edited?: boolean };
 import { fmt } from '../../utils/format';
 import { PARTS } from '../JingleExtractor/parts';
 import './CandidateList.css';
 
 interface CandidateListProps {
-  candidates: Candidate[];
+  candidates: DisplayCandidate[];
   selectedId: number | null;
   onSelect: (id: number) => void;
   onPreview: (id: number) => void;
@@ -64,7 +66,7 @@ export function CandidateList({
 
             {/* Vocal overlap badge */}
             <span data-part={PARTS.candidateBadge}>
-              {c.vocal_overlap ? '⚠ vox' : '✓'}
+              {c.vocal_overlap ? '⚠ vox' : '✓'}{c.edited ? ' ✎' : ''}
             </span>
 
             {/* Preview button */}

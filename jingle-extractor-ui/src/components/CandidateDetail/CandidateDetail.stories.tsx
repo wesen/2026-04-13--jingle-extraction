@@ -43,6 +43,7 @@ function detailStory(name: string, candidate: Candidate, stem: StemType = 'inst'
         stem={stem as StemType}
         onPreview={() => alert('Preview!')}
         onExport={() => alert('Export!')}
+        onResetEdit={() => alert('Reset edit!')}
       />
     ),
   } as Story;

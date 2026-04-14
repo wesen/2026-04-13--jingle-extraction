@@ -163,6 +163,8 @@ class ExportRequest(BaseModel):
     fade_in: int = Field(20, ge=0, le=1000)
     fade_out: int = Field(50, ge=0, le=1000)
     br: Optional[int] = Field(None, ge=64, le=320)
+    start: Optional[float] = None
+    end: Optional[float] = None
 
 
 class ExportBatchRequest(BaseModel):

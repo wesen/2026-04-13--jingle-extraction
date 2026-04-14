@@ -34,6 +34,8 @@ export interface ExportRequest {
   fade_in: number;
   fade_out: number;
   br: number | null;
+  start?: number;
+  end?: number;
 }
 
 export interface ExportBatchRequest {
