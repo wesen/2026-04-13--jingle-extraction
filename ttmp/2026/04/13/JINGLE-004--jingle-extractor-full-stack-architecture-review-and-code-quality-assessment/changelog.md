@@ -139,3 +139,12 @@ Improved preview playback semantics by projecting exported clip playback onto th
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx — Preview toggle wiring and debug window integration
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/hooks/useAudioPlayer.ts — Absolute preview timeline projection and preview race control
 
+
+## 2026-04-13
+
+Fixed the Configuration Run action so completed tracks re-mine via POST /api/mine instead of incorrectly calling POST /api/analyze, then manually re-mined thrash_metal_01 with vocal mode to restore lyric-overlapping candidates for live testing.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx — Run button now chooses re-mine for completed tracks
+

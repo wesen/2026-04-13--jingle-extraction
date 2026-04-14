@@ -40,7 +40,9 @@ RelatedFiles:
     - Path: jingle-extractor-ui/src/components/DebugPanel/DebugPanel.tsx
       Note: Step 16 timestamp debug panel
     - Path: jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx
-      Note: Validation-time callback fix and root runtime review
+      Note: |-
+        Validation-time callback fix and root runtime review
+        Step 17 remine-vs-analyze Run action fix
     - Path: jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx
       Note: |-
         Step 11 timeline interaction test
@@ -68,6 +70,7 @@ LastUpdated: 2026-04-13T21:48:00-04:00
 WhatFor: Capture how the review was performed, what evidence was gathered, what validation passed or failed, and how to continue the investigation later.
 WhenToUse: Use when continuing the JINGLE-004 review, verifying claims in the design doc, or replaying the investigation commands.
 ---
+
 
 
 
@@ -1695,3 +1698,71 @@ This step improved the playback controller semantics and added a dedicated debug
 ### Notes
 - Lint status did not regress; the repo remains in the same "warnings only" state as the previous Storybook cleanup step.
 - The Vite dev server should hot-reload these UI changes, so manual testing can continue immediately in the running frontend.
+
+## Step 17: Make the Run action re-mine completed tracks instead of calling analyze again
+
+During live testing, the user showed the exact browser request being sent from the frontend:
+
+```js
+await fetch("http://localhost:5173/api/analyze", {
+  body: "{\"audio_file\":\"thrash_metal_01\",...\"vocal_mode\":\"vocal\"...}"
+})
+```
+
+That confirmed the root problem behind the confusing behavior: for an already analyzed track, the UI was still posting to `/api/analyze` instead of `/api/mine`.
+
+That matters because `/api/analyze` expects a server file path and is the full-pipeline entrypoint. It is not the right endpoint for “same track, new scoring/filter config.” In practice, this meant changing `vocal_mode` in the UI did not reliably recompute candidate windows for the already-complete `thrash_metal_01` analysis.
+
+### What I changed
+- Updated `JingleExtractor.tsx` so the Configuration panel's Run action now does this:
+  - if the current track already has a complete analysis loaded, call `POST /api/mine`
+  - otherwise, keep using `POST /api/analyze`
+- Hooked in `useMineCandidatesMutation()` and reused `refetch()` afterwards so the refreshed candidate list comes back from `GET /api/analysis/{track_id}`
+- Kept the existing analyze path for non-complete tracks, since that still belongs to full initial analysis
+
+### Manual backend validation
+I also manually re-mined the current backend state for `thrash_metal_01` with vocal mode enabled:
+
+```bash
+curl -s http://127.0.0.1:8000/api/mine \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "trackId":"thrash_metal_01",
+    "config":{
+      "min_dur":2.0,
+      "max_dur":4.5,
+      "min_score":75,
+      "vocal_mode":"vocal",
+      "atk_w":6,
+      "end_w":4,
+      "nrg_w":3,
+      "beat_w":3,
+      "max_cand":5,
+      "fade_in":20,
+      "fade_out":50,
+      "fmt":"mp3",
+      "br":192
+    }
+  }' | jq .
+```
+
+That returned vocal-overlapping candidates such as:
+- `26.006 → 30.006`
+- `32.194 → 36.194`
+- `38.742 → 42.742`
+
+which line up much more plausibly with the visible lyric segments than the prior instrumental-only set.
+
+### Validation
+- `cd jingle-extractor-ui && npm run build` ✅
+- `cd jingle-extractor-ui && npm run lint` ✅ (warnings only, same Storybook naming warnings as before)
+- `curl http://127.0.0.1:8000/api/mine ...` ✅
+- `curl http://127.0.0.1:8000/api/analysis/thrash_metal_01` showed the re-mined vocal-overlap candidates persisted in the analysis response ✅
+
+### Why this matters
+This fix restores an honest editing loop for already-analyzed tracks:
+- tweak config
+- click Run
+- get new candidates for the same analyzed track
+
+Without this, the UI configuration looked interactive but was still routed through the wrong backend workflow.
