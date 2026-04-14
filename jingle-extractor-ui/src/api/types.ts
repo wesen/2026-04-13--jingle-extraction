@@ -50,8 +50,14 @@ export interface Candidate {
   attack: number; // 0–100 quality score
   ending: number; // 0–100 quality score
   energy: number; // 0–100 quality score
+  phrase_score?: number | null;
   vocal_overlap: boolean;
   best: boolean; // true for the single top-ranked candidate
+  source_kind?: string | null;
+  source_segment_id?: number | null;
+  source_text?: string | null;
+  source_start?: number | null;
+  source_end?: number | null;
 }
 
 export interface CandidateQuality {

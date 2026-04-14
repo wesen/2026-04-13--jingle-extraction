@@ -89,8 +89,14 @@ async def get_analysis(track_id: str):
             attack=c["attack"],
             ending=c["ending"],
             energy=c["energy"],
+            phrase_score=c.get("phrase_score"),
             vocal_overlap=bool(c["vocal_overlap"]),
             best=bool(c["is_best"]),
+            source_kind=c.get("source_kind"),
+            source_segment_id=c.get("source_segment_idx"),
+            source_text=c.get("source_text"),
+            source_start=c.get("source_start"),
+            source_end=c.get("source_end"),
         )
         for c in cand_rows
     ]

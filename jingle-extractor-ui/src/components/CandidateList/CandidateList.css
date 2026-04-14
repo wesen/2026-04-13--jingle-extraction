@@ -11,7 +11,7 @@
 /* Row — use grid for perfect column alignment */
 [data-widget='jingle-extractor'] [data-part='candidate-row'] {
   display: grid;
-  grid-template-columns: 22px 1fr 36px 30px 44px 24px;
+  grid-template-columns: 22px minmax(0, 1fr) 42px 34px 52px 24px;
   align-items: center;
   gap: var(--je-space-2, 4px);
   padding: var(--je-space-2, 4px) var(--je-space-4, 8px);
@@ -49,8 +49,24 @@
 /* Time range */
 [data-widget='jingle-extractor'] [data-part='candidate-time'] {
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+[data-widget='jingle-extractor'] [data-part='candidate-title'] {
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: var(--je-font-weight-bold, 700);
+}
+
+[data-widget='jingle-extractor'] [data-part='candidate-time'] > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
 }
 
 /* Duration */

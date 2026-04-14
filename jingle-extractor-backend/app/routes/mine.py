@@ -66,8 +66,14 @@ async def mine(request: MineRequest):
             attack=cand["attack"],
             ending=cand["ending"],
             energy=cand["energy"],
+            phrase_score=cand.get("phrase_score"),
             vocal_overlap=cand["vocal_overlap"],
             best=cand["best"],
+            source_kind=cand.get("source_kind"),
+            source_segment_id=cand.get("source_segment_id"),
+            source_text=cand.get("source_text"),
+            source_start=cand.get("source_start"),
+            source_end=cand.get("source_end"),
         )
         for cand in candidates
     ]
@@ -86,6 +92,12 @@ async def mine(request: MineRequest):
             energy=cand["energy"],
             vocal_overlap=cand["vocal_overlap"],
             is_best=cand["best"],
+            phrase_score=cand.get("phrase_score"),
+            source_kind=cand.get("source_kind"),
+            source_segment_idx=cand.get("source_segment_id"),
+            source_text=cand.get("source_text"),
+            source_start=cand.get("source_start"),
+            source_end=cand.get("source_end"),
         )
 
     return result

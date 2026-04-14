@@ -68,10 +68,12 @@ export function DebugPanel({
               <thead>
                 <tr>
                   <th>Rank</th>
+                  <th>Source</th>
                   <th>Start</th>
                   <th>End</th>
                   <th>Dur</th>
                   <th>Score</th>
+                  <th>Phrase</th>
                   <th>Vox</th>
                 </tr>
               </thead>
@@ -89,10 +91,12 @@ export function DebugPanel({
                         {candidate.best ? '★' : `#${candidate.rank}`}
                         {candidate.edited ? ' ✎' : ''}
                       </td>
+                      <td data-part={PARTS.debugText}>{candidate.source_text ?? candidate.source_kind ?? '—'}</td>
                       <td title={fmtPrecise(candidate.start)}>{fmt(candidate.start)}</td>
                       <td title={fmtPrecise(candidate.end)}>{fmt(candidate.end)}</td>
                       <td>{duration.toFixed(3)}s</td>
                       <td>{candidate.score}</td>
+                      <td>{candidate.phrase_score ?? '—'}</td>
                       <td>{candidate.vocal_overlap ? 'yes' : 'no'}</td>
                     </tr>
                   );
@@ -113,6 +117,7 @@ export function DebugPanel({
                   <th>End</th>
                   <th>Dur</th>
                   <th>Overlap</th>
+                  <th>Words</th>
                   <th>Text</th>
                 </tr>
               </thead>
@@ -129,6 +134,7 @@ export function DebugPanel({
                       <td title={fmtPrecise(segment.end)}>{fmt(segment.end)}</td>
                       <td>{duration.toFixed(3)}s</td>
                       <td>{selectedOverlap ? 'selected jingle' : '—'}</td>
+                      <td>{segment.words?.length ?? 0}</td>
                       <td data-part={PARTS.debugText}>{segment.text}</td>
                     </tr>
                   );

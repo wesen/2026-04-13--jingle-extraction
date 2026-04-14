@@ -63,8 +63,14 @@ CREATE TABLE IF NOT EXISTS candidates (
     attack          INTEGER NOT NULL,
     ending          INTEGER NOT NULL,
     energy          INTEGER NOT NULL,
+    phrase_score    INTEGER,
     vocal_overlap   INTEGER DEFAULT 0,
     is_best         INTEGER DEFAULT 0,
+    source_kind     TEXT,
+    source_segment_idx INTEGER,
+    source_text     TEXT,
+    source_start    REAL,
+    source_end      REAL,
     config_hash     TEXT,
     created_at      TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
@@ -100,6 +106,24 @@ class Database:
     def create_tables(self) -> None:
         with self._conn() as conn:
             conn.executescript(SQL_SCHEMA)
+            self._ensure_candidate_columns(conn)
+
+    def _ensure_candidate_columns(self, conn: sqlite3.Connection) -> None:
+        existing = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(candidates)").fetchall()
+        }
+        additions = {
+            "phrase_score": "INTEGER",
+            "source_kind": "TEXT",
+            "source_segment_idx": "INTEGER",
+            "source_text": "TEXT",
+            "source_start": "REAL",
+            "source_end": "REAL",
+        }
+        for column, col_type in additions.items():
+            if column not in existing:
+                conn.execute(f"ALTER TABLE candidates ADD COLUMN {column} {col_type}")
 
     # ── Tracks ─────────────────────────────────────────────────────────────
 
@@ -192,11 +216,35 @@ class Database:
         self, track_id: str, candidate_idx: int, rank: int,
         start: float, end: float, score: int, attack: int,
         ending: int, energy: int, vocal_overlap: bool, is_best: bool,
+        phrase_score: Optional[int] = None,
+        source_kind: Optional[str] = None,
+        source_segment_idx: Optional[int] = None,
+        source_text: Optional[str] = None,
+        source_start: Optional[float] = None,
+        source_end: Optional[float] = None,
     ) -> None:
         with self._conn() as conn:
             conn.execute(
-                "INSERT INTO candidates (track_id, candidate_idx, rank, start_time, end_time, score, attack, ending, energy, vocal_overlap, is_best) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (track_id, candidate_idx, rank, start, end, score, attack, ending, energy, int(vocal_overlap), int(is_best)),
+                "INSERT INTO candidates (track_id, candidate_idx, rank, start_time, end_time, score, attack, ending, energy, phrase_score, vocal_overlap, is_best, source_kind, source_segment_idx, source_text, source_start, source_end) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    track_id,
+                    candidate_idx,
+                    rank,
+                    start,
+                    end,
+                    score,
+                    attack,
+                    ending,
+                    energy,
+                    phrase_score,
+                    int(vocal_overlap),
+                    int(is_best),
+                    source_kind,
+                    source_segment_idx,
+                    source_text,
+                    source_start,
+                    source_end,
+                ),
             )
 
     def get_candidates(self, track_id: str) -> list[dict]:

@@ -37,7 +37,7 @@ export function CandidateDetail({
       {/* Header */}
       <div data-part={PARTS.detailHeader}>
         <div data-part={PARTS.detailTitle}>
-          Candidate #{candidate.rank}
+          {candidate.source_text ?? `Candidate #${candidate.rank}`}
           {candidate.best && ' ★ BEST'}
         </div>
         <div data-part={PARTS.detailSubtitle}>
@@ -51,6 +51,9 @@ export function CandidateDetail({
         <ScoreBar label="Attack" value={candidate.attack} />
         <ScoreBar label="Ending" value={candidate.ending} />
         <ScoreBar label="Energy" value={candidate.energy} />
+        {typeof candidate.phrase_score === 'number' && (
+          <ScoreBar label="Phrase" value={candidate.phrase_score} />
+        )}
 
         <div data-part={PARTS.overallScore}>
           <span data-part={PARTS.overallLabel}>Overall</span>
@@ -87,6 +90,20 @@ export function CandidateDetail({
           <span data-part={PARTS.contextLabel}>Stem</span>
           <span data-part={PARTS.contextValue}>{stem}</span>
         </div>
+
+        {candidate.source_kind && (
+          <div data-part={PARTS.contextItem}>
+            <span data-part={PARTS.contextLabel}>Candidate source</span>
+            <span data-part={PARTS.contextValue}>{candidate.source_kind}</span>
+          </div>
+        )}
+
+        {candidate.source_segment_id != null && (
+          <div data-part={PARTS.contextItem}>
+            <span data-part={PARTS.contextLabel}>Lyric segment</span>
+            <span data-part={PARTS.contextValue}>#{candidate.source_segment_id}</span>
+          </div>
+        )}
 
         <div data-part={PARTS.contextItem}>
           <span data-part={PARTS.contextLabel}>Local edit</span>

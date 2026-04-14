@@ -65,8 +65,31 @@ export function ConfigEditor({
     }
   };
 
+  const handleStrategyChange = (candidate_mode: AnalysisConfig['candidate_mode']) => {
+    onChange({ ...config, candidate_mode });
+  };
+
   return (
     <div data-part={PARTS.configEditor} style={style}>
+      <div data-part={PARTS.configStrategyRow} role="group" aria-label="Candidate mining strategy">
+        <button
+          type="button"
+          data-part={PARTS.configStrategyButton}
+          aria-pressed={config.candidate_mode === 'rhythmic'}
+          onClick={() => handleStrategyChange('rhythmic')}
+        >
+          Rhythmic
+        </button>
+        <button
+          type="button"
+          data-part={PARTS.configStrategyButton}
+          aria-pressed={config.candidate_mode === 'lyric_aligned'}
+          onClick={() => handleStrategyChange('lyric_aligned')}
+        >
+          Lyric aligned
+        </button>
+      </div>
+
       {/* JSON textarea */}
       <textarea
         ref={textareaRef}

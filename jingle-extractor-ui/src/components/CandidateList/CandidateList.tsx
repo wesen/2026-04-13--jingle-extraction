@@ -39,6 +39,8 @@ export function CandidateList({
         const isPreviewing = previewingId === c.id;
         const duration = c.end - c.start;
 
+        const label = c.source_text ?? `Candidate #${c.rank}`;
+
         return (
           <div
             key={c.id}
@@ -54,7 +56,8 @@ export function CandidateList({
 
             {/* Time range */}
             <span data-part={PARTS.candidateTime}>
-              {fmt(c.start)} → {fmt(c.end)}
+              <span data-part={PARTS.candidateTitle}>{label}</span>
+              <span>{fmt(c.start)} → {fmt(c.end)}</span>
             </span>
 
             {/* Duration */}

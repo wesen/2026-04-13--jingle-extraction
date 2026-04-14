@@ -154,8 +154,13 @@ def test_mine_returns_lyric_aligned_candidates_without_rerunning_pipeline(client
     data = resp.json()
     assert len(data) == 2
     assert all(cand["vocal_overlap"] for cand in data)
+    assert all(cand["source_kind"] == "lyric_segment" for cand in data)
+    assert all(cand["source_segment_id"] is not None for cand in data)
+    assert all(cand["source_text"] for cand in data)
+    assert all(cand["phrase_score"] is not None for cand in data)
 
     short_phrase_candidate = next(
         cand for cand in data if cand["start"] <= 10.0 and cand["end"] >= 10.3
     )
     assert short_phrase_candidate["end"] - short_phrase_candidate["start"] >= 2.0
+    assert short_phrase_candidate["source_text"] == "Yow!"

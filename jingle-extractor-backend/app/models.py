@@ -104,8 +104,14 @@ class Candidate(BaseModel):
     attack: int
     ending: int
     energy: int
+    phrase_score: Optional[int] = None
     vocal_overlap: bool
     best: bool
+    source_kind: Optional[str] = None
+    source_segment_id: Optional[int] = None
+    source_text: Optional[str] = None
+    source_start: Optional[float] = None
+    source_end: Optional[float] = None
 
 
 # ─── Configuration ──────────────────────────────────────────────────────────

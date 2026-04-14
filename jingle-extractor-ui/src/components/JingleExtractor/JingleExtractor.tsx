@@ -346,7 +346,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
 
             {selectedCandidate && (
               <MacWindow
-                title={`Detail — #${selectedCandidate.rank}${selectedCandidate.best ? ' ★ BEST' : ''}`}
+                title={`Detail — ${selectedCandidate.source_text ?? `#${selectedCandidate.rank}`}${selectedCandidate.best ? ' ★ BEST' : ''}`}
                 bodyStyle={{ overflowY: 'auto' }}
               >
                 <CandidateDetail
