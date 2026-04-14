@@ -5,6 +5,7 @@
 ### Ticket setup and scope
 - [x] Create ticket workspace for lyric-aligned candidate mining follow-up
 - [x] Write an initial design guide describing the problem and proposed direction
+- [x] Write a comprehensive onboarding analysis / design / implementation guide comparing JINGLE-001 to the current productized system
 - [ ] Relate the key current mining/frontend files to this ticket
 
 ### Backend design and extraction

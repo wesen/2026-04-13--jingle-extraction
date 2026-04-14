@@ -37,6 +37,7 @@ The immediate purpose of this ticket is to capture the design and carve the work
 ## Key Links
 
 - **Primary design doc**: [design/01-lyric-aligned-candidate-mining-design-guide.md](./design/01-lyric-aligned-candidate-mining-design-guide.md)
+- **Comprehensive onboarding guide**: [design/02-current-system-vs-jingle-001-port-map-and-implementation-guide.md](./design/02-current-system-vs-jingle-001-port-map-and-implementation-guide.md)
 - **Related Files**: See frontmatter RelatedFiles field
 - **External Sources**: See frontmatter ExternalSources field
 
