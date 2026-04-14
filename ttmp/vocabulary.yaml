@@ -29,6 +29,10 @@ topics:
       description: Frontend architecture, React UI implementation, and client-side review topics.
     - slug: review
       description: Code review, architecture review, and assessment deliverables.
+    - slug: minimax
+      description: MiniMax music generation service, prompts, and integration design
+    - slug: ux
+      description: User experience, workflow design, and interface affordances
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
