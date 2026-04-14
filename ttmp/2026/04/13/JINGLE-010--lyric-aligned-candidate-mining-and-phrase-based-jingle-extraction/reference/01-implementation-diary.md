@@ -182,3 +182,69 @@ That means the old `min_score = 70` value for `Vocal Hooks` was effectively cali
 ### What warrants another pass later
 - The current lyric-aligned scorer still uses only rhythmic quality dimensions; a future phase should add phrase-aware scoring so score thresholds become semantically meaningful again.
 - The top-ranked lyric-aligned candidate is currently the short final `Crack` phrase in this track, which is plausible mathematically but may not be the most useful editorial result. That will need phrase-aware scoring or better preset tuning later.
+
+## Step 3: Resolve live export 500 and verify `orig` export semantics
+
+While manually testing the new lyric-aligned flow through the live frontend, the user reported a `500` from `POST /api/export` when exporting from the `orig` stem. The concern was whether the backend had started mixing stems behind the scenes instead of exporting from the original file.
+
+### What I checked
+- Reproduced the request through the Vite proxy
+- Captured the backend tmux logs
+- Confirmed that the failing line was not any mixing logic at all; the route crashed when trying to import `pydub`
+
+The actual error was:
+
+```text
+ModuleNotFoundError: No module named 'pydub'
+```
+
+### Root cause
+The backend tmux session had been started with the wrong Python interpreter:
+- system `python3`
+- instead of the project virtualenv Python
+
+That meant the server process did not have the backend's runtime audio dependencies available, even though the project `.venv` did.
+
+### What I did
+- Verified `.venv/bin/python` had `pydub`
+- Verified system `python3` did not
+- Restarted the backend tmux session using:
+
+```bash
+tmux kill-session -t backend
+tmux new-session -d -s backend \
+  'cd /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend && /home/manuel/code/wesen/2026-04-13--jingle-extraction/.venv/bin/python run.py'
+```
+
+### Verification
+After restarting with the correct interpreter:
+
+```bash
+curl -si http://127.0.0.1:5173/api/export \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "trackId":"thrash_metal_01",
+    "candidateId":2,
+    "stem":"orig",
+    "fmt":"mp3",
+    "fade_in":20,
+    "fade_out":50,
+    "br":192,
+    "start":29.335,
+    "end":31.516
+  }'
+```
+
+returned `200 OK`, and the same request through a small Python check returned a non-empty `audio/mpeg` payload.
+
+### Important conclusion
+The backend is still behaving correctly for `stem = "orig"`:
+- it resolves the original track
+- slices the original track
+- applies fades
+- exports the result
+
+It is **not** mixing `inst + vocal` for `orig`.
+
+### What changed in the repo
+No code changes were required for this step. This was an environment/runtime correction and live verification step only.

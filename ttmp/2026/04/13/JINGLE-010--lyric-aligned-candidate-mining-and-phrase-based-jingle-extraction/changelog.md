@@ -36,3 +36,12 @@ Implemented the first lyric-aligned candidate miner by adding candidate_mode and
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/services/candidate_mining.py — Shared rhythmic and lyric-aligned candidate construction service
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/DebugPanel/DebugPanel.tsx — UI summary exposes candidate strategy and lyric padding
 
+
+## 2026-04-14
+
+Documented and resolved a live export 500 that turned out to be a backend runtime environment issue rather than a mixing bug: the backend tmux session was restarted under the project virtualenv so orig-stem exports work again through the frontend proxy.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/ttmp/2026/04/13/JINGLE-010--lyric-aligned-candidate-mining-and-phrase-based-jingle-extraction/reference/01-implementation-diary.md — Recorded export 500 diagnosis and runtime fix
+
