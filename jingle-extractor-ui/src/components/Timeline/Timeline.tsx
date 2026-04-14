@@ -28,13 +28,22 @@ interface TimelineProps {
   onPlayheadChange: (time: number) => void;
 }
 
-// ─── Coordinate helpers ─────────────────────────────────────────────────────
-
 function tToX(t: number, dur: number, pW: number, padL: number): number {
   return padL + (t / dur) * pW;
 }
 
-// ─── Beat grid layer ────────────────────────────────────────────────────────
+function clampCandidateEdgeTime(
+  candidate: Candidate,
+  edge: 'start' | 'end',
+  time: number,
+  maxTime: number
+): number {
+  if (edge === 'start') {
+    return Math.max(0, Math.min(time, candidate.end - 0.3));
+  }
+
+  return Math.min(maxTime, Math.max(time, candidate.start + 0.3));
+}
 
 interface BeatGridLayerProps {
   data: TimelineData;
@@ -64,8 +73,6 @@ function BeatGridLayer({ data, padT, pH, dur, pW, padL }: BeatGridLayerProps) {
   );
 }
 
-// ─── Candidate layer ────────────────────────────────────────────────────────
-
 interface CandidateLayerProps {
   candidates: Candidate[];
   selectedId: number | null;
@@ -75,8 +82,7 @@ interface CandidateLayerProps {
   pW: number;
   padL: number;
   onSelect: (id: number) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onPointerDown: (e: React.PointerEvent<any>, id: number, edge: 'start' | 'end') => void;
+  onPointerDown: (e: React.PointerEvent<SVGRectElement>, id: number, edge: 'start' | 'end') => void;
 }
 
 function GripLines({ x, padT, pH }: { x: number; padT: number; pH: number }) {
@@ -119,7 +125,6 @@ function CandidateLayer({
 
         return (
           <g key={c.id} data-part={PARTS.candidateRegion}>
-            {/* Fill */}
             <rect
               x={x1}
               y={padT}
@@ -134,13 +139,22 @@ function CandidateLayer({
               }}
               cursor="pointer"
             />
-            {/* Top border */}
-            <rect x={x1} y={padT} width={x2 - x1} height={1.5}
-              fill="var(--je-color-candidate-border)" opacity={borderOpacity} />
-            {/* Bottom border */}
-            <rect x={x1} y={padT + pH - 1.5} width={x2 - x1} height={1.5}
-              fill="var(--je-color-candidate-border)" opacity={borderOpacity} />
-            {/* Label */}
+            <rect
+              x={x1}
+              y={padT}
+              width={x2 - x1}
+              height={1.5}
+              fill="var(--je-color-candidate-border)"
+              opacity={borderOpacity}
+            />
+            <rect
+              x={x1}
+              y={padT + pH - 1.5}
+              width={x2 - x1}
+              height={1.5}
+              fill="var(--je-color-candidate-border)"
+              opacity={borderOpacity}
+            />
             <text
               x={x1 + 6}
               y={padT + 14}
@@ -150,25 +164,50 @@ function CandidateLayer({
               fontWeight={isSel ? 'bold' : 'normal'}
               opacity={isSel ? 1 : 0.5}
             >
-              #{c.rank}{c.best ? ' ★' : ''}
+              #{c.rank}
+              {c.best ? ' ★' : ''}
             </text>
 
-            {/* Left handle */}
-            <rect x={x1 - 1} y={padT} width={HANDLE_W} height={pH}
-              fill="transparent" cursor="ew-resize"
-              onPointerDown={(e) => onPointerDown(e, c.id, 'start')} />
-            <rect x={x1} y={padT + pH * 0.15} width={2.5} height={pH * 0.7}
+            <rect
+              data-part={PARTS.candidateHandle}
+              x={x1 - 1}
+              y={padT}
+              width={HANDLE_W}
+              height={pH}
+              fill="transparent"
+              cursor="ew-resize"
+              onPointerDown={(e) => onPointerDown(e, c.id, 'start')}
+            />
+            <rect
+              x={x1}
+              y={padT + pH * 0.15}
+              width={2.5}
+              height={pH * 0.7}
               fill="var(--je-color-candidate-border)"
-              opacity={isSel ? 0.85 : 0.35} rx={1} />
+              opacity={isSel ? 0.85 : 0.35}
+              rx={1}
+            />
             <GripLines x={x1} padT={padT} pH={pH} />
 
-            {/* Right handle */}
-            <rect x={x2 - HANDLE_W + 1} y={padT} width={HANDLE_W} height={pH}
-              fill="transparent" cursor="ew-resize"
-              onPointerDown={(e) => onPointerDown(e, c.id, 'end')} />
-            <rect x={x2 - 2.5} y={padT + pH * 0.15} width={2.5} height={pH * 0.7}
+            <rect
+              data-part={PARTS.candidateHandle}
+              x={x2 - HANDLE_W + 1}
+              y={padT}
+              width={HANDLE_W}
+              height={pH}
+              fill="transparent"
+              cursor="ew-resize"
+              onPointerDown={(e) => onPointerDown(e, c.id, 'end')}
+            />
+            <rect
+              x={x2 - 2.5}
+              y={padT + pH * 0.15}
+              width={2.5}
+              height={pH * 0.7}
               fill="var(--je-color-candidate-border)"
-              opacity={isSel ? 0.85 : 0.35} rx={1} />
+              opacity={isSel ? 0.85 : 0.35}
+              rx={1}
+            />
             <GripLines x={x2} padT={padT} pH={pH} />
           </g>
         );
@@ -176,8 +215,6 @@ function CandidateLayer({
     </g>
   );
 }
-
-// ─── Vocal layer ─────────────────────────────────────────────────────────────
 
 interface VocalLayerProps {
   segments: VocalSegment[];
@@ -196,17 +233,35 @@ function VocalLayer({ segments, dur, pW, padL, svgH }: VocalLayerProps) {
       {segments.map((s) => {
         const x1 = tToX(s.start, dur, pW, padL);
         const x2 = tToX(s.end, dur, pW, padL);
-        const displayText = s.text.length > 20 ? s.text.slice(0, 18) + '…' : s.text;
+        const displayText = s.text.length > 20 ? `${s.text.slice(0, 18)}…` : s.text;
 
         return (
           <g key={s.id} data-part={PARTS.vocalRegion}>
-            <rect x={x1} y={bottomY} width={x2 - x1} height={labelH}
-              fill="url(#checker)" opacity={0.12} style={{ imageRendering: 'pixelated' }} />
-            <rect x={x1} y={bottomY} width={x2 - x1} height={1}
-              fill="var(--je-color-border)" opacity={0.3} />
-            <text x={x1 + 2} y={bottomY + labelH - 6}
-              fill="var(--je-color-text)" fontSize={8.5}
-              fontFamily="var(--je-font-family)" opacity={0.55}>
+            <rect
+              x={x1}
+              y={bottomY}
+              width={x2 - x1}
+              height={labelH}
+              fill="url(#checker)"
+              opacity={0.12}
+              style={{ imageRendering: 'pixelated' }}
+            />
+            <rect
+              x={x1}
+              y={bottomY}
+              width={x2 - x1}
+              height={1}
+              fill="var(--je-color-border)"
+              opacity={0.3}
+            />
+            <text
+              x={x1 + 2}
+              y={bottomY + labelH - 6}
+              fill="var(--je-color-text)"
+              fontSize={8.5}
+              fontFamily="var(--je-font-family)"
+              opacity={0.55}
+            >
               {displayText}
             </text>
           </g>
@@ -215,8 +270,6 @@ function VocalLayer({ segments, dur, pW, padL, svgH }: VocalLayerProps) {
     </g>
   );
 }
-
-// ─── Waveform layer ──────────────────────────────────────────────────────────
 
 interface WaveformLayerProps {
   rms: number[];
@@ -250,8 +303,6 @@ function WaveformLayer({ rms, padT, pH, pW }: WaveformLayerProps) {
   );
 }
 
-// ─── Playhead layer ─────────────────────────────────────────────────────────
-
 interface PlayheadLayerProps {
   playhead: number;
   svgH: number;
@@ -265,15 +316,11 @@ function PlayheadLayer({ playhead, svgH, dur, pW, padL }: PlayheadLayerProps) {
   const x = tToX(playhead, dur, pW, padL);
   return (
     <g data-part={PARTS.playhead} aria-label="Playhead">
-      <line x1={x} x2={x} y1={0} y2={svgH}
-        stroke="var(--je-color-playhead)" strokeWidth={1.5} />
-      <polygon points={`${x - 4},0 ${x + 4},0 ${x},7`}
-        fill="var(--je-color-playhead)" />
+      <line x1={x} x2={x} y1={0} y2={svgH} stroke="var(--je-color-playhead)" strokeWidth={1.5} />
+      <polygon points={`${x - 4},0 ${x + 4},0 ${x},7`} fill="var(--je-color-playhead)" />
     </g>
   );
 }
-
-// ─── Main Timeline component ────────────────────────────────────────────────
 
 export function Timeline({
   data,
@@ -287,7 +334,6 @@ export function Timeline({
 }: TimelineProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Layout constants
   const W = 1400;
   const H = 210;
   const padL = 0;
@@ -296,34 +342,21 @@ export function Timeline({
   const pH = H - padT - 22;
   const dur = data.duration;
 
-  // x ↔ time conversion
   const xToT = useCallback(
     (x: number) => Math.max(0, Math.min(dur, (x / pW) * dur)),
     [dur, pW]
   );
 
-  // Drag handling
-  const { onPointerDown, onPointerMove, onPointerUp, setSvgRef, setConverter } = useTimelineDrag({
+  const { onPointerDown, onPointerMove, onPointerUp } = useTimelineDrag({
     maxTime: dur,
+    xToT,
     onCandidateUpdate: (id, edge, time) => {
-      const cand = candidates.find((c) => c.id === id);
-      if (!cand) return;
-      if (edge === 'start') {
-        onCandidateUpdate(id, 'start', Math.max(0, Math.min(time, cand.end - 0.3)));
-      } else {
-        onCandidateUpdate(id, 'end', Math.min(dur, Math.max(time, cand.start + 0.3)));
-      }
+      const candidate = candidates.find((c) => c.id === id);
+      if (!candidate) return;
+      onCandidateUpdate(id, edge, clampCandidateEdgeTime(candidate, edge, time, dur));
     },
   });
 
-  // Provide the xToT converter to the drag hook so it can translate pointer positions to time
-  const xToTCallback = useCallback(
-    (x: number) => Math.max(0, Math.min(dur, (x / pW) * dur)),
-    [dur, pW]
-  );
-  setConverter(xToTCallback);
-
-  // Click background → set playhead
   const handleBgClick = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
       if (!svgRef.current) return;
@@ -331,15 +364,12 @@ export function Timeline({
       const svgX = (e.clientX - rect.left) * (W / rect.width);
       onPlayheadChange(xToT(svgX));
     },
-    [W, xToT, onPlayheadChange]
+    [W, onPlayheadChange, xToT]
   );
 
   return (
     <svg
-      ref={(el) => {
-        (svgRef as React.MutableRefObject<SVGSVGElement | null>).current = el;
-        setSvgRef(el);
-      }}
+      ref={svgRef}
       viewBox={`0 0 ${W} ${H}`}
       data-part={PARTS.timeline}
       style={{ width: '100%', height: 'auto', display: 'block', cursor: 'crosshair' }}
@@ -356,7 +386,6 @@ export function Timeline({
         </pattern>
       </defs>
 
-      {/* Time labels */}
       {[0, 10, 20, 30, 40, 50].map((t) => (
         <text
           key={t}
@@ -372,7 +401,6 @@ export function Timeline({
         </text>
       ))}
 
-      {/* Layers */}
       <BeatGridLayer data={data} padT={padT} pH={pH} dur={dur} pW={pW} padL={padL} />
       <VocalLayer segments={vocals} dur={dur} pW={pW} padL={padL} svgH={H} />
       <CandidateLayer
