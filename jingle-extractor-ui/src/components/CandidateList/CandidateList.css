@@ -1,16 +1,19 @@
 /**
- * CandidateList.css — Candidate list panel.
+ * CandidateList.css — Candidate list panel with grid-aligned columns.
  */
 
+/* Container */
 [data-widget='jingle-extractor'] [data-part='candidate-list'] {
   padding: var(--je-space-1, 2px);
+  overflow: hidden;
 }
 
-/* Row */
+/* Row — use grid for perfect column alignment */
 [data-widget='jingle-extractor'] [data-part='candidate-row'] {
-  display: flex;
+  display: grid;
+  grid-template-columns: 22px 1fr 36px 30px 44px 24px;
   align-items: center;
-  gap: var(--je-space-4, 8px);
+  gap: var(--je-space-2, 4px);
   padding: var(--je-space-2, 4px) var(--je-space-4, 8px);
   cursor: pointer;
   border-bottom: var(--je-border-width, 2px) solid var(--je-color-border, #000);
@@ -20,6 +23,8 @@
   width: 100%;
   text-align: left;
   font-family: var(--je-font-family, monospace);
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 [data-widget='jingle-extractor'] [data-part='candidate-row']:hover {
@@ -35,26 +40,31 @@
 /* Rank badge */
 [data-widget='jingle-extractor'] [data-part='candidate-rank'] {
   font-weight: var(--je-font-weight-bold, 700);
-  width: 18px;
   text-align: center;
-  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Time range */
 [data-widget='jingle-extractor'] [data-part='candidate-time'] {
-  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Duration */
 [data-widget='jingle-extractor'] [data-part='candidate-duration'] {
   opacity: 0.6;
-  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* Score */
 [data-widget='jingle-extractor'] [data-part='candidate-score'] {
   font-weight: var(--je-font-weight-bold, 700);
-  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* Vocal overlap badge */
@@ -63,7 +73,9 @@
   border: 1px solid var(--je-color-border, #000);
   border-radius: var(--je-border-radius, 4px);
   padding: 0 var(--je-space-1, 2px);
-  flex-shrink: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 [data-widget='jingle-extractor']
@@ -78,11 +90,12 @@
   color: var(--je-color-text, #000);
   border: none;
   border-radius: var(--je-border-radius, 4px);
-  padding: 1px var(--je-space-2, 4px);
+  padding: 1px 0;
   font-size: var(--je-font-size-sm, 10px);
   font-family: var(--je-font-family, monospace);
   cursor: pointer;
-  flex-shrink: 0;
+  text-align: center;
+  width: 24px;
 }
 
 [data-widget='jingle-extractor']

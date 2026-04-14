@@ -9,7 +9,9 @@ import './app/theme/theme-light.css';
 import App from './App';
 
 async function enableMocking() {
-  if (import.meta.env.DEV) {
+  // Only enable MSW when explicitly requested via VITE_API_MOCKING=true
+  // Otherwise, requests go to the real backend (via Vite proxy)
+  if (import.meta.env.DEV && import.meta.env.VITE_API_MOCKING === 'true') {
     const { worker } = await import('./mocks/browser');
     return worker.start({
       onUnhandledRequest: 'bypass',
