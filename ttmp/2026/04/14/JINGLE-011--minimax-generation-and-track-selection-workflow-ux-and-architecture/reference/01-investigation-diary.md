@@ -18,6 +18,18 @@ RelatedFiles:
       Note: Investigated current one-view app shell
     - Path: jingle-extractor-ui/src/api/jingleApi.ts
       Note: Investigated current API surface and unused track-list hook
+    - Path: jingle-extractor-ui/src/components/GenerationComposer/GenerationComposer.tsx
+      Note: Step 3 Studio generation form widget
+    - Path: jingle-extractor-ui/src/components/StudioScreen/StudioScreen.tsx
+      Note: Step 3 composed one-screen Studio workflow shell
+    - Path: jingle-extractor-ui/src/components/TrackInspector/TrackInspector.tsx
+      Note: Step 3 selected-track inspector widget
+    - Path: jingle-extractor-ui/src/components/TrackLibraryList/TrackLibraryList.tsx
+      Note: Step 3 library list widget with filters
+    - Path: jingle-extractor-ui/src/components/TrackResultsList/TrackResultsList.tsx
+      Note: Step 3 current-run results list widget
+    - Path: jingle-extractor-ui/src/features/studio/studioSlice.ts
+      Note: Step 3 added dedicated Studio screen state
     - Path: jingle_extractor.py
       Note: Investigated to confirm MiniMax generation already exists in the CLI
     - Path: out/vocal_jingles/README.md
@@ -28,6 +40,7 @@ LastUpdated: 2026-04-14T23:06:00-04:00
 WhatFor: Capture the investigation process, evidence collection, and delivery steps for JINGLE-011.
 WhenToUse: Use when reviewing how the design was assembled or continuing the research/implementation stream later.
 ---
+
 
 
 # Diary
@@ -448,3 +461,168 @@ npx vitest run src/components/TransportBar/TransportBar.playback.test.tsx src/co
 ```
 
 
+
+## Step 3: Implement the Storybook-first Studio UI slice with a dedicated studio state model
+
+After the design work was stable enough, I moved into the frontend implementation slice the user explicitly requested: build the React/Storybook pieces first, and create the state needed to support them, before wiring the real backend generation endpoints. The key idea in this step was to make the studio UI *real enough to compose and review visually* while keeping it independent from unfinished backend contracts.
+
+I treated this as a Storybook-first component extraction pass. That meant creating the domain types, creating a `studioSlice`, then building the Studio widgets as prop-driven components with realistic fixtures and full stories. The goal was not to make the generation loop live yet; the goal was to create a believable, reusable design-system-aligned widget set that can be reviewed by engineering and UX before deeper runtime integration.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, let's focus on the storybook / react parts first. Create the necessary slices in order to create the components in their stories, since we already know quite a bit about their design and CSS and how to do it. Create detailed tasks in the ticket, and then work on them one by one, committing at appropriate intervals, keeping a detailed diary"
+
+**Assistant interpretation:** Start with the frontend component layer instead of backend routes: define the studio-domain slice and types, create the new Studio widgets with tokenized CSS and Storybook stories, update ticket tasks to track the work in detail, and document the implementation as it progresses.
+
+**Inferred user intent:** De-risk the UX implementation by getting the component system, layout, and Storybook review surface in place first, so later backend integration has a stable UI target.
+
+**Commit (code):** `0ee7d00` — `feat(ui): scaffold studio screen widgets for storybook`
+
+### What I did
+- Updated `JINGLE-011/tasks.md` with a detailed Storybook-first frontend plan broken into:
+  - foundation
+  - components
+  - validation
+  - later backend/runtime work
+- Added Studio-domain frontend types in `jingle-extractor-ui/src/api/types.ts`, including:
+  - `GenerationComposerValue`
+  - `GenerationRunSummary`
+  - `TrackLibraryItem`
+  - studio/library filter enums and helper status types
+- Added `jingle-extractor-ui/src/features/studio/studioSlice.ts`
+- Wired `studioSlice` into `jingle-extractor-ui/src/app/store.ts`
+- Added reusable story fixtures in `jingle-extractor-ui/src/mocks/fixtures/studio.ts`
+- Added shared form styling in `jingle-extractor-ui/src/components/shared/form.css`
+- Updated shared CSS imports via `jingle-extractor-ui/src/components/shared/index.css`
+- Extended `parts.ts` with Studio-specific `data-part` names
+- Built and storified the following new components:
+  - `GenerationComposer`
+  - `TrackResultsList`
+  - `TrackLibraryList`
+  - `TrackInspector`
+  - `StudioScreen`
+- Reused existing primitives where possible:
+  - `MacWindow`
+  - `MenuBar`
+  - `SegmentedControl`
+  - `DataList`
+  - shared button/panel CSS primitives
+- Fixed `DataList` typing so its generic column definition no longer trips lint and TypeScript when keyed by generic item fields
+- Updated the JINGLE-011 design doc’s widget inventory so it now includes the full current set of relevant widgets, including the newly added Studio widgets plus `SegmentedControl` and `DataList`
+
+### Why
+- The Studio UI needs a clear review surface before it is connected to live generation APIs
+- The app already had strong mining widgets but no equivalent Studio-layer widgets
+- A dedicated `studioSlice` prevents the new Studio concerns from leaking into `analysisSlice`, which is already mining-specific
+- Prop-driven Storybook components make it easier to iterate on layout and affordances without backend coupling
+
+### What worked
+- Existing shared primitives (`MacWindow`, `DataList`, `SegmentedControl`, shared button/panel CSS) were enough to make the Studio widgets feel visually consistent with the rest of the app
+- The Storybook-first approach worked well for:
+  - validating layout composition
+  - testing empty/default/generating states
+  - proving that the one-screen Studio concept is implementable without introducing multi-view complexity
+- Validation succeeded:
+  - `cd jingle-extractor-ui && npm run build`
+  - `cd jingle-extractor-ui && npm run build-storybook`
+- Lint remained at the known baseline: warnings only, no new lint errors
+
+### What didn't work
+- The first TypeScript build failed because several new Storybook stories used `StoryObj<typeof meta>` without supplying required `args`, producing errors like:
+
+```text
+Property 'args' is missing in type '{ render: () => JSX.Element; }'
+```
+
+- `studioSlice.ts` initially failed with:
+
+```text
+Type 'string | number' is not assignable to type 'never'.
+```
+
+for the generic field update reducer.
+
+- `DataList.tsx` hit a TypeScript issue after I made the column key generic:
+
+```text
+Type 'string | number | symbol' is not assignable to type 'Key | null | undefined'.
+```
+
+- ESLint also correctly flagged a Storybook helper that called `setState` from `useEffect` in `GenerationComposer.stories.tsx`:
+
+```text
+Error: Calling setState synchronously within an effect can trigger cascading renders
+```
+
+- `docmgr doctor --ticket JINGLE-011 --stale-after 30` also surfaced a documentation hygiene issue unrelated to the code itself:
+
+```text
+[WARNING] missing_numeric_prefix — file without numeric prefix (.../playbooks/PLAYBOOK--storybook-playwright-ab-screenshot-workflow.md)
+```
+
+I resolved that by renaming the playbook to `playbooks/01-storybook-playwright-ab-screenshot-workflow.md` so the ticket returned to a clean doctor state.
+
+### What I learned
+- For strongly typed Storybook stories, it is often easier to define realistic `meta.args` up front even if the story uses a custom `render`
+- `DataList` was already a very strong primitive for the Studio work; the new track list widgets are much thinner wrappers than I originally expected
+- The distinction between Studio state and Mining state is already paying off conceptually: the Studio widgets did not need to know anything about playheads, stems, or candidate drag edits
+
+### What was tricky to build
+- The main tricky part was getting the new components to feel like natural siblings of the existing mining widgets rather than like a second unrelated mini-app. I solved that by leaning hard on the existing parts/tokens vocabulary and by reusing `MacWindow`, `DataList`, and `SegmentedControl` instead of inventing fresh control styles.
+- Another tricky part was keeping the Storybook stories interactive while still satisfying strict TypeScript and lint constraints. The first pass used convenience patterns that were too loose for the project’s current typing/lint setup, so I normalized the stories around `meta.args`, local state helpers, and simpler initialization logic.
+
+### What warrants a second pair of eyes
+- The use of `MenuBar` inside `StudioScreen` currently relies on synthesized track-like header data because the existing `MenuBar` prop contract is mining-oriented
+- `TrackLibraryList` currently owns its toolbar controls directly; reviewers may want to decide whether that toolbar should remain integrated or become its own reusable component in a later cleanup pass
+- `TrackResultsList` and `TrackLibraryList` intentionally share a lot of row vocabulary; it is worth reviewing whether a future generalized wrapper is desirable or whether keeping them separate is clearer for UX work
+
+### What should be done in the future
+- Wire the new Studio widgets to real RTK Query endpoints after the backend generation contracts exist
+- Decide whether to introduce a dedicated `StudioHeader` instead of adapting `MenuBar`
+- Add a connected Studio container that reads from `studioSlice` directly, while keeping the presentational components story-friendly
+- Add targeted interaction tests for the new Studio widgets once runtime wiring begins
+
+### Code review instructions
+- Start with the new state/types foundation:
+  - `jingle-extractor-ui/src/api/types.ts`
+  - `jingle-extractor-ui/src/features/studio/studioSlice.ts`
+  - `jingle-extractor-ui/src/mocks/fixtures/studio.ts`
+- Then review the presentational widgets in this order:
+  - `jingle-extractor-ui/src/components/GenerationComposer/GenerationComposer.tsx`
+  - `jingle-extractor-ui/src/components/TrackResultsList/TrackResultsList.tsx`
+  - `jingle-extractor-ui/src/components/TrackLibraryList/TrackLibraryList.tsx`
+  - `jingle-extractor-ui/src/components/TrackInspector/TrackInspector.tsx`
+  - `jingle-extractor-ui/src/components/StudioScreen/StudioScreen.tsx`
+- Validate with:
+
+```bash
+cd /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui
+npm run build
+npm run lint
+npm run build-storybook
+```
+
+Expected result:
+- build passes
+- Storybook build passes
+- lint reports only the pre-existing warning baseline in older story files
+
+### Technical details
+
+Commands run during this step:
+
+```bash
+cd /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui
+npm run build
+npm run lint
+npm run build-storybook
+```
+
+Representative issues fixed during the step:
+
+```text
+Property 'args' is missing in type '{ render: () => JSX.Element; }'
+Type 'string | number' is not assignable to type 'never'
+Type 'string | number | symbol' is not assignable to type 'Key | null | undefined'
+Error: Calling setState synchronously within an effect can trigger cascading renders
+```

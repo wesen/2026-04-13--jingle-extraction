@@ -34,3 +34,15 @@ Simplified the proposed UX from a multi-view studio shell to one main Studio scr
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/ttmp/2026/04/14/JINGLE-011--minimax-generation-and-track-selection-workflow-ux-and-architecture/design-doc/01-minimax-generation-and-track-selection-ux-architecture-and-implementation-guide.md — Updated IA
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/ttmp/2026/04/14/JINGLE-011--minimax-generation-and-track-selection-workflow-ux-and-architecture/reference/01-investigation-diary.md — Recorded the simplification pass and widget-inventory handoff work
 
+
+## 2026-04-14
+
+Implemented the Storybook-first Studio UI slice: added studio-domain types and state, created GenerationComposer, TrackResultsList, TrackLibraryList, TrackInspector, and StudioScreen, and validated frontend build plus Storybook build.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/GenerationComposer/GenerationComposer.tsx — Created the generation form widget
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/StudioScreen/StudioScreen.tsx — Composed the new one-screen Studio layout from reusable widgets
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/TrackLibraryList/TrackLibraryList.tsx — Created the library list and filter widget
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/features/studio/studioSlice.ts — Dedicated Studio state model for the new one-screen workflow
+

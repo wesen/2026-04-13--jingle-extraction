@@ -20,8 +20,18 @@ RelatedFiles:
       Note: Current completed-only track listing behavior
     - Path: jingle-extractor-ui/src/App.tsx
       Note: Current top-level app shell lacks generation/library workflow
+    - Path: jingle-extractor-ui/src/components/GenerationComposer/GenerationComposer.tsx
+      Note: Now implements the documented Studio generation form
     - Path: jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx
       Note: Existing single-track extraction workbench to preserve and wrap
+    - Path: jingle-extractor-ui/src/components/StudioScreen/StudioScreen.tsx
+      Note: Now implements the documented one-screen Studio composition
+    - Path: jingle-extractor-ui/src/components/TrackInspector/TrackInspector.tsx
+      Note: Now implements the documented selected-track inspector
+    - Path: jingle-extractor-ui/src/components/TrackLibraryList/TrackLibraryList.tsx
+      Note: Now implements the documented library list and toolbar
+    - Path: jingle-extractor-ui/src/components/TrackResultsList/TrackResultsList.tsx
+      Note: Now implements the documented current-run results list
     - Path: jingle_extractor.py
       Note: Existing MiniMax CLI generation and full pipeline entrypoints
     - Path: out/vocal_jingles/README.md
@@ -32,6 +42,7 @@ LastUpdated: 2026-04-14T16:48:09.320663574-04:00
 WhatFor: 'Design the next major product surface: generating multiple tracks with MiniMax, browsing them, comparing them, selecting keepers, and handing chosen tracks into the extraction workbench.'
 WhenToUse: Use when implementing generation APIs, track library/catalog UI, studio-screen workflows, or onboarding engineers to the generation-to-extraction product model.
 ---
+
 
 
 # MiniMax Generation and Track Selection UX Architecture and Implementation Guide
@@ -793,6 +804,154 @@ Source: `jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx`
 
 Use for: the existing mining screen container. This should remain the main entry point for the post-selection extraction workflow.
 
+#### `SegmentedControl`
+
+Source: `jingle-extractor-ui/src/components/SegmentedControl/SegmentedControl.tsx`
+
+```ts
+{
+  value: string;
+  options: Array<{ value: string; label: ReactNode; disabled?: boolean }>;
+  onChange: (value: string) => void;
+  label?: string;
+  className?: string;
+  rootPart?: string;
+  buttonPart?: string;
+}
+```
+
+Use for: compact mutually-exclusive option groups such as vocal/instrumental mode, source filters, or simple status filters.
+
+#### `DataList`
+
+Source: `jingle-extractor-ui/src/components/DataList/DataList.tsx`
+
+```ts
+{
+  items: Array<{ id: string | number }>;
+  columns: ColumnDef[];
+  selectedId: string | number | null;
+  previewingId?: string | number | null;
+  onSelect: (item: T) => void;
+  rowActions?: DataListAction<T>[];
+  actionColumnWidth?: string;
+  ariaLabel?: string;
+  className?: string;
+  renderCell: (item: T, column: ColumnDef) => ReactNode;
+}
+```
+
+Use for: dense list and row-action layouts. This is now the primary reuse primitive for `TrackResultsList` and `TrackLibraryList`.
+
+#### `GenerationComposer`
+
+Source: `jingle-extractor-ui/src/components/GenerationComposer/GenerationComposer.tsx`
+
+```ts
+{
+  value: GenerationComposerValue;
+  onChange: (value: GenerationComposerValue) => void;
+  onGenerate: () => void;
+  onSavePrompt?: () => void;
+  isGenerating?: boolean;
+}
+```
+
+Use for: the Studio screen batch-generation form.
+
+#### `TrackResultsList`
+
+Source: `jingle-extractor-ui/src/components/TrackResultsList/TrackResultsList.tsx`
+
+```ts
+{
+  run: GenerationRunSummary | null;
+  tracks: TrackLibraryItem[];
+  selectedId: string | null;
+  previewingId?: string | null;
+  onSelect: (track: TrackLibraryItem) => void;
+  onPreview: (track: TrackLibraryItem) => void;
+  onAnalyze: (track: TrackLibraryItem) => void;
+}
+```
+
+Use for: current-run result rows plus a compact run summary bar.
+
+#### `TrackLibraryList`
+
+Source: `jingle-extractor-ui/src/components/TrackLibraryList/TrackLibraryList.tsx`
+
+```ts
+{
+  tracks: TrackLibraryItem[];
+  selectedId: string | null;
+  previewingId?: string | null;
+  search: string;
+  sourceFilter: LibrarySourceFilter;
+  statusFilter: LibraryStatusFilter;
+  sort: LibrarySort;
+  onSearchChange: (value: string) => void;
+  onSourceFilterChange: (value: LibrarySourceFilter) => void;
+  onStatusFilterChange: (value: LibraryStatusFilter) => void;
+  onSortChange: (value: LibrarySort) => void;
+  onSelect: (track: TrackLibraryItem) => void;
+  onPreview: (track: TrackLibraryItem) => void;
+  onAnalyze: (track: TrackLibraryItem) => void;
+}
+```
+
+Use for: the broader track library with lightweight filtering controls.
+
+#### `TrackInspector`
+
+Source: `jingle-extractor-ui/src/components/TrackInspector/TrackInspector.tsx`
+
+```ts
+{
+  track: TrackLibraryItem | null;
+  run?: GenerationRunSummary | null;
+  isPreviewing?: boolean;
+  onPreview?: () => void;
+  onAnalyze?: () => void;
+  onOpenInMining?: () => void;
+}
+```
+
+Use for: selected-track detail and primary actions on the Studio screen.
+
+#### `StudioScreen`
+
+Source: `jingle-extractor-ui/src/components/StudioScreen/StudioScreen.tsx`
+
+```ts
+{
+  composerValue: GenerationComposerValue;
+  onComposerChange: (value: GenerationComposerValue) => void;
+  onGenerate: () => void;
+  onSavePrompt?: () => void;
+  isGenerating?: boolean;
+  currentRun: GenerationRunSummary | null;
+  currentRunTracks: TrackLibraryItem[];
+  libraryTracks: TrackLibraryItem[];
+  selectedTrackId: string | null;
+  previewingTrackId?: string | null;
+  librarySearch: string;
+  librarySourceFilter: LibrarySourceFilter;
+  libraryStatusFilter: LibraryStatusFilter;
+  librarySort: LibrarySort;
+  onLibrarySearchChange: (value: string) => void;
+  onLibrarySourceFilterChange: (value: LibrarySourceFilter) => void;
+  onLibraryStatusFilterChange: (value: LibraryStatusFilter) => void;
+  onLibrarySortChange: (value: LibrarySort) => void;
+  onSelectTrack: (track: TrackLibraryItem) => void;
+  onPreviewTrack: (track: TrackLibraryItem) => void;
+  onAnalyzeTrack: (track: TrackLibraryItem) => void;
+  onOpenInMining: (track: TrackLibraryItem) => void;
+}
+```
+
+Use for: the full one-screen studio composition.
+
 ### Existing widget summary table
 
 | Widget | Exists now | Best reuse target | Notes |
@@ -808,6 +967,13 @@ Use for: the existing mining screen container. This should remain the main entry
 | `ScoreBar` | yes | mining / possible future analytics | simple reusable meter |
 | `DebugPanel` | yes | mining | internal/debug oriented |
 | `JingleExtractor` | yes | mining screen container | preserve rather than rewrite |
+| `SegmentedControl` | yes | studio + mining | reusable option-group primitive |
+| `DataList` | yes | studio + mining | reusable dense list primitive |
+| `GenerationComposer` | yes | studio | created in this Storybook-first slice |
+| `TrackResultsList` | yes | studio | created in this Storybook-first slice |
+| `TrackLibraryList` | yes | studio | created in this Storybook-first slice |
+| `TrackInspector` | yes | studio | created in this Storybook-first slice |
+| `StudioScreen` | yes | studio screen composition | created in this Storybook-first slice |
 
 ---
 
