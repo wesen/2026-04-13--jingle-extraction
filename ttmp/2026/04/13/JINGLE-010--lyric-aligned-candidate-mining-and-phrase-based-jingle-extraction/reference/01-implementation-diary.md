@@ -12,18 +12,29 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: jingle-extractor-backend/app/database.py
+      Note: Step 4 candidate provenance columns and automatic migration
     - Path: jingle-extractor-backend/app/routes/mine.py
       Note: Step 1 remine route switched to shared service and lyric-aligned mode
     - Path: jingle-extractor-backend/app/services/candidate_mining.py
-      Note: Step 1 shared rhythmic and lyric-aligned candidate construction service
+      Note: |-
+        Step 1 shared rhythmic and lyric-aligned candidate construction service
+        Step 4 phrase-aware scoring and provenance propagation
+    - Path: jingle-extractor-ui/src/components/CandidateList/CandidateList.tsx
+      Note: Step 4 candidate text label display
+    - Path: jingle-extractor-ui/src/components/ConfigEditor/ConfigEditor.tsx
+      Note: Step 4 explicit strategy controls
     - Path: jingle-extractor-ui/src/components/DebugPanel/DebugPanel.tsx
-      Note: Step 1 UI summary now exposes candidate strategy and lyric padding
+      Note: |-
+        Step 1 UI summary now exposes candidate strategy and lyric padding
+        Step 4 provenance-aware debug panel
 ExternalSources: []
 Summary: Chronological diary for implementing lyric-aligned mining in the productized jingle extractor.
 LastUpdated: 0001-01-01T00:00:00Z
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Implementation Diary
@@ -248,3 +259,81 @@ It is **not** mixing `inst + vocal` for `orig`.
 
 ### What changed in the repo
 No code changes were required for this step. This was an environment/runtime correction and live verification step only.
+
+## Step 4: Add candidate provenance, phrase-aware scoring, and explicit UI strategy controls
+
+After the first lyric-aligned miner worked end to end, I implemented the next cluster of improvements together because they reinforce each other:
+- provenance metadata on candidates
+- phrase-aware scoring for lyric-aligned windows
+- explicit UI controls for mining strategy
+- displaying lyric phrase text directly in candidate names
+- richer debug output for source metadata
+
+### What I changed
+
+#### Backend provenance and scoring
+- Extended the backend candidate model with optional fields for:
+  - `phrase_score`
+  - `source_kind`
+  - `source_segment_id`
+  - `source_text`
+  - `source_start`
+  - `source_end`
+- Added candidate-table migration support in `Database.create_tables()` so existing SQLite databases gain the new candidate columns automatically on startup
+- Updated the shared mining service so lyric-aligned windows now carry source metadata forward from the originating vocal segment
+- Added a first phrase-aware score that rewards:
+  - coverage of the source phrase
+  - reasonable boundary placement relative to the padded ideal window
+  - compactness
+  - some bias for multi-word phrases and having a bit of release after the phrase
+- Combined that phrase score into lyric-aligned ranking while leaving rhythmic windows untouched
+- Updated both the pipeline path and `/api/mine` path to persist and return the new provenance metadata
+
+#### Frontend UI and debug behavior
+- Extended the frontend `Candidate` type with the new optional provenance fields
+- Added explicit strategy buttons to `ConfigEditor`:
+  - `Rhythmic`
+  - `Lyric aligned`
+- Kept the JSON editor intact, but now users no longer need to edit raw JSON just to change miner strategy
+- Updated candidate list rendering so the visible candidate name now shows `source_text` when present
+- Updated the detail panel title and context section to show phrase text/source information when available
+- Expanded the debug table so candidate rows now show:
+  - source text / source kind
+  - phrase score
+- Added a focused frontend test verifying that the strategy buttons update config without manual JSON editing
+
+### Why
+This phase turns the lyric-aligned miner from a hidden backend behavior into something the user can actually understand and control.
+
+Without provenance metadata, a candidate is still just a time window. With provenance metadata, the UI can explain that a candidate came from a specific phrase such as `"Spinning power!"`. That dramatically improves trust and makes tuning work much easier.
+
+Without explicit UI controls, the miner strategy would still feel like an expert-only JSON tweak. The strategy buttons make the product intent legible.
+
+### Validation
+```bash
+cd jingle-extractor-backend && python3 -m pytest -q tests
+cd jingle-extractor-ui && npm run build
+cd jingle-extractor-ui && npm run lint
+cd jingle-extractor-ui && npx vitest run --config vitest.config.ts src/components/ConfigEditor/ConfigEditor.strategy.test.tsx
+```
+
+Results:
+- backend tests: `25 passed`
+- frontend build: passed
+- frontend lint: warnings only, no new errors
+- frontend strategy-control test: passed
+
+### Live comparison notes
+After restarting the backend so the candidate-table migration ran, live lyric-aligned `/api/mine` results now include provenance such as:
+- `source_text: "Crack"`
+- `source_text: "Metal force, we will not crack"`
+- `source_text: "Spinning power!"`
+
+and corresponding `source_segment_id` / `phrase_score` values.
+
+That means the frontend now has enough information to show phrase names directly in the candidate list/detail UI.
+
+### What still warrants future work
+- The current phrase-aware score is still a first pass and may need more editorially-informed tuning; for example, the final short `"Crack"` phrase can still rank highly
+- We still do not persist or display word-span-level provenance beyond segment-level metadata
+- Mixed export mode is still not implemented

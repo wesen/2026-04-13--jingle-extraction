@@ -45,3 +45,15 @@ Documented and resolved a live export 500 that turned out to be a backend runtim
 
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/ttmp/2026/04/13/JINGLE-010--lyric-aligned-candidate-mining-and-phrase-based-jingle-extraction/reference/01-implementation-diary.md — Recorded export 500 diagnosis and runtime fix
 
+
+## 2026-04-14
+
+Added candidate provenance metadata and first-pass phrase-aware scoring to the lyric-aligned miner, migrated candidate storage to carry source segment information, exposed explicit strategy controls in the frontend, and updated the candidate/debug UI to show lyric phrase names directly.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/database.py — Candidate provenance columns and automatic SQLite migration
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/services/candidate_mining.py — Phrase-aware scoring and source metadata propagation
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/CandidateList/CandidateList.tsx — Display lyric phrase text in candidate names
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/ConfigEditor/ConfigEditor.tsx — Explicit mining strategy controls
+

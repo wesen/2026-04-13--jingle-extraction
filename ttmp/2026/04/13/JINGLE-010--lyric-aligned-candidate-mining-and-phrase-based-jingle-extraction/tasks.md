@@ -13,16 +13,16 @@
 - [x] Decide whether initial lyric-aligned mining is segment-based, word-span-based, or both
 - [x] Add config fields for mining strategy and lyric padding
 - [x] Implement a first backend lyric-aligned candidate builder using stored WhisperX timestamps
-- [ ] Add candidate metadata describing lyric source segment/word provenance
+- [x] Add candidate metadata describing lyric source segment/word provenance
 
 ### Frontend and API shape
-- [ ] Expose mining strategy explicitly in the UI instead of overloading `vocal_mode`
+- [x] Expose mining strategy explicitly in the UI instead of overloading `vocal_mode`
 - [x] Add one or more lyric-centered presets
-- [ ] Expand the debug panel to show lyric-source metadata for each candidate
+- [x] Expand the debug panel to show lyric-source metadata for each candidate
 - [x] Make visible in the UI which mining mode generated the current candidates
 
 ### Validation
 - [x] Compare `rhythmic`, `vocal overlap`, and lyric-aligned mining on `thrash_metal_01`
 - [ ] Validate phrase completeness subjectively by previewing exports
 - [x] Add backend tests for lyric-aligned mining behavior
-- [ ] Add frontend tests for the new config/debug UI behavior
+- [x] Add frontend tests for the new config/debug UI behavior
