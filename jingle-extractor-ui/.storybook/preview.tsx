@@ -23,7 +23,6 @@ const preview: Preview = {
    * Wrap every story with the Redux Provider (for stories that need it).
    */
   decorators: [
-    // eslint-disable-next-line react/display-name
     (Story) => (
       <Provider
         store={configureStore({

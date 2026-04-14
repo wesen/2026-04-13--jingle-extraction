@@ -2,7 +2,7 @@
  * PresetPanel.stories.tsx — Storybook stories for PresetPanel.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { PresetPanel } from './PresetPanel';
 import type { PresetName } from '../../api/types';
 

@@ -2,7 +2,7 @@
  * ConfigEditor.stories.tsx — Storybook stories for ConfigEditor.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { ConfigEditor } from './ConfigEditor';
 import type { AnalysisConfig } from '../../api/types';
@@ -49,35 +49,36 @@ const meta = {
 } satisfies Meta<typeof ConfigEditor>;
 
 export default meta;
-// Story type — use base StoryObj so render() without args works
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Story = StoryObj<any>;
+type Story = StoryObj<typeof meta>;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function configStory(name: string, config: AnalysisConfig, isLoading = false): Story {
+function makeStory(name: string, config: AnalysisConfig, isLoading = false): Story {
   return {
     name,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    render: (_args: any) => {
+    args: {
+      config,
+      onChange: () => {},
+      onRun: () => {},
+      onReset: () => {},
+      isLoading,
+      style: { flex: 1, display: 'flex', flexDirection: 'column' },
+    },
+    render: (args) => {
       const [cfg, setCfg] = useState(config);
       return (
         <div style={{ height: '300px', display: 'flex', flexDirection: 'column' }}>
           <ConfigEditor
+            {...args}
             config={cfg}
             onChange={setCfg}
             onRun={() => alert('Run analysis!')}
             onReset={() => setCfg(config)}
-            isLoading={isLoading}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
           />
         </div>
       );
     },
-  } as Story;
+  };
 }
 
-// ── Stories ────────────────────────────────────────────────────────────────
-
-export const DefaultConfig = configStory('Default Config', DEFAULT_CONFIG);
-export const LongBedsConfig = configStory('Long Beds Config (WAV)', LONG_BEDS_CONFIG);
-export const LoadingState = configStory('Loading State', DEFAULT_CONFIG, true);
+export const DefaultConfig = makeStory('Default Config', DEFAULT_CONFIG);
+export const LongBedsConfig = makeStory('Long Beds Config (WAV)', LONG_BEDS_CONFIG);
+export const LoadingState = makeStory('Loading State', DEFAULT_CONFIG, true);

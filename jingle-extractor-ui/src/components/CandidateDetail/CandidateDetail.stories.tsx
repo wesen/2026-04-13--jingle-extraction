@@ -2,7 +2,7 @@
  * CandidateDetail.stories.tsx — Storybook stories for CandidateDetail.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CandidateDetail } from './CandidateDetail';
 import type { Candidate, StemType } from '../../api/types';
 

@@ -2,7 +2,7 @@
  * MenuBar.stories.tsx — Storybook stories for MenuBar.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MenuBar } from './MenuBar';
 import type { Track } from '../../api/types';
 

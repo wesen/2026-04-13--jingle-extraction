@@ -2,7 +2,7 @@
  * Timeline.stories.tsx — Storybook stories for Timeline.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Timeline } from './Timeline';
 import type { Candidate, TimelineData, VocalSegment } from '../../api/types';

@@ -2,7 +2,7 @@
  * MacWindow.stories.tsx — Storybook stories for MacWindow.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MacWindow } from './MacWindow';
 
 const meta = {

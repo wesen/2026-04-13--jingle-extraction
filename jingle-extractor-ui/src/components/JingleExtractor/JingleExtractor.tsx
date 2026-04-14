@@ -140,7 +140,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
   const track = analysisComplete ? analysis.track : null;
   const timeline = analysisComplete ? analysis.timeline : null;
   const vocals = analysisComplete ? analysis.vocals.segments : [];
-  const candidates = analysisComplete ? analysis.candidates : [];
+  const candidates = useMemo(() => (analysisComplete ? analysis.candidates : []), [analysis, analysisComplete]);
   const analysisStatus = !analysisComplete ? analysis?.status ?? null : null;
   const analysisErrorMessage = !analysisComplete ? analysis?.error_message ?? null : null;
 

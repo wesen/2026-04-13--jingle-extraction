@@ -2,7 +2,7 @@
  * ScoreBar.stories.tsx — Storybook stories for ScoreBar.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ScoreBar } from './ScoreBar';
 
 const meta = {
