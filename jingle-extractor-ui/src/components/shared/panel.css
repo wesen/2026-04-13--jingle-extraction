@@ -1,0 +1,122 @@
+/**
+ * panel.css — Shared panel / inspector section patterns.
+ *
+ * Provides consistent styling for:
+ * - Panel headers (with bottom border)
+ * - Section labels (uppercase, letter-spaced)
+ * - Label/value rows (space-between flex row)
+ *
+ * Theme via: --je-color-border, --je-color-text, --je-color-text-muted,
+ *            --je-border-width, --je-space-*, --je-font-*
+ */
+
+/* ── Panel header (with border) ───────────────────────────────────────────── */
+
+[data-part='panel-header'] {
+  padding-bottom: var(--je-space-4, 8px);
+  border-bottom: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+}
+
+/* ── Panel section ─────────────────────────────────────────────────────────── */
+
+[data-part='panel-section'] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--je-space-2, 4px);
+}
+
+[data-part='panel-section'] + [data-part='panel-section'] {
+  padding-top: var(--je-space-4, 8px);
+  border-top: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+}
+
+/* ── Section label ────────────────────────────────────────────────────────── */
+
+[data-part='panel-section-label'] {
+  font-size: var(--je-font-size-sm, 10px);
+  font-weight: var(--je-font-weight-bold, 700);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--je-color-text, #000);
+  margin-bottom: var(--je-space-1, 2px);
+}
+
+/* ── Label / value row ───────────────────────────────────────────────────── */
+
+[data-part='panel-row'] {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--je-space-3, 6px);
+}
+
+[data-part='panel-row'] + [data-part='panel-row'] {
+  margin-top: var(--je-space-1, 2px);
+}
+
+[data-part='panel-row-label'] {
+  color: var(--je-color-text-muted, rgba(0, 0, 0, 0.5));
+  font-size: var(--je-font-size-md, 11px);
+  font-family: var(--je-font-family, monospace);
+  flex-shrink: 0;
+}
+
+[data-part='panel-row-value'] {
+  font-weight: 600;
+  font-size: var(--je-font-size-md, 11px);
+  font-family: var(--je-font-family, monospace);
+  color: var(--je-color-text, #000);
+  text-align: right;
+}
+
+/* ── Status badges ─────────────────────────────────────────────────────────── */
+
+[data-part='status-badge'] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--je-space-1, 2px);
+  padding: 1px var(--je-space-2, 4px);
+  border: 1px solid var(--je-color-border, #000);
+  border-radius: var(--je-border-radius, 4px);
+  font-size: var(--je-font-size-xs, 9px);
+  font-weight: var(--je-font-weight-bold, 700);
+  font-family: var(--je-font-family, monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+[data-part='status-badge'][data-status='generated'] {
+  background: var(--je-color-surface, #fff);
+  color: var(--je-color-text, #000);
+}
+
+[data-part='status-badge'][data-status='analyzed'],
+[data-part='status-badge'][data-status='complete'] {
+  background: var(--je-color-selected, #000);
+  color: var(--je-color-selected-text, #fff);
+}
+
+[data-part='status-badge'][data-status='pending'] {
+  background: var(--je-color-bg, #c0c0c0);
+  color: var(--je-color-text, #000);
+}
+
+[data-part='status-badge'][data-status='failed'] {
+  background: var(--je-color-error, #cc0000);
+  color: var(--je-color-text-inverse, #fff);
+}
+
+[data-part='source-badge'] {
+  /* Used for: generated / imported / uploaded source type */
+  font-size: var(--je-font-size-xs, 9px);
+  border: 1px solid var(--je-color-border, #000);
+  border-radius: var(--je-border-radius, 4px);
+  padding: 1px var(--je-space-1, 2px);
+  font-family: var(--je-font-family, monospace);
+}
+
+[data-part='keep-badge'] {
+  /* ★ marker for operator-kept tracks */
+  color: var(--je-color-accent, #000);
+  font-size: var(--je-font-size-md, 11px);
+}

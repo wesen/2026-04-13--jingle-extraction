@@ -13,6 +13,8 @@
  * All gaps: 8px
  */
 
+@import '../shared/index.css';
+
 [data-widget='jingle-extractor'] {
   display: flex;
   flex-direction: column;

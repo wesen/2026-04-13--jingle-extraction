@@ -1,0 +1,83 @@
+/**
+ * segmented-control.css — Shared segmented toggle group.
+ *
+ * A horizontal row of mutually-exclusive options. One option is always active
+ * (aria-pressed="true"), the rest are inactive.
+ *
+ * Currently used by: TransportBar (stem toggle), ConfigEditor (strategy toggle).
+ * Will be used by: Studio screen library filters, generation type toggle.
+ *
+ * Theme via: --je-color-selected, --je-color-selected-text,
+ *            --je-color-surface, --je-color-bg, --je-color-text,
+ *            --je-color-border, --je-border-width, --je-border-radius,
+ *            --je-space-*, --je-font-*
+ */
+
+/* ── Segmented control container ─────────────────────────────────────────── */
+
+[data-part='segmented-control'] {
+  display: flex;
+  gap: 0;
+}
+
+/* ── Individual segment button ────────────────────────────────────────────── */
+
+[data-part='segmented-btn'] {
+  padding: var(--je-space-1, 2px) var(--je-space-3, 6px);
+  background: var(--je-color-surface, #fff);
+  color: var(--je-color-text, #000);
+  border: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+  font-size: var(--je-font-size-sm, 10px);
+  font-family: var(--je-font-family, monospace);
+  cursor: pointer;
+  font-weight: var(--je-font-weight-normal, 400);
+  line-height: 1;
+  /* Flatten inner edges between adjacent buttons */
+  margin-right: calc(-1 * var(--je-border-width, 2px));
+}
+
+[data-part='segmented-btn']:first-child {
+  border-radius: var(--je-border-radius, 4px) 0 0 var(--je-border-radius, 4px);
+  margin-right: 0;
+}
+
+[data-part='segmented-btn']:last-child {
+  border-radius: 0 var(--je-border-radius, 4px) var(--je-border-radius, 4px) 0;
+  margin-right: 0;
+}
+
+/* Only one button in the group — keep both corners rounded */
+[data-part='segmented-btn']:only-child {
+  border-radius: var(--je-border-radius, 4px);
+  margin-right: 0;
+}
+
+/* ── Active (pressed) state ─────────────────────────────────────────────── */
+
+[data-part='segmented-btn'][aria-pressed='true'] {
+  background: var(--je-color-selected, #000);
+  color: var(--je-color-selected-text, #fff);
+  font-weight: var(--je-font-weight-bold, 700);
+}
+
+/* ── Hover state (inactive only) ────────────────────────────────────────── */
+
+[data-part='segmented-btn']:hover:not([aria-pressed='true']) {
+  background: var(--je-color-bg, #c0c0c0);
+}
+
+/* ── Disabled state ─────────────────────────────────────────────────────── */
+
+[data-part='segmented-btn'][aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Focus state ─────────────────────────────────────────────────────────── */
+
+[data-part='segmented-btn']:focus-visible {
+  outline: 2px solid var(--je-color-accent, #000);
+  outline-offset: 2px;
+  z-index: 1;
+  position: relative;
+}

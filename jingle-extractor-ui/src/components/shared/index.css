@@ -1,0 +1,11 @@
+/**
+ * index.css — Shared design primitives.
+ *
+ * Import this file in any component that uses shared primitives.
+ * These styles are consumed by data-part selectors on the jingle-extractor
+ * widget root: [data-widget='jingle-extractor'].
+ */
+
+@import './button.css';
+@import './segmented-control.css';
+@import './panel.css';

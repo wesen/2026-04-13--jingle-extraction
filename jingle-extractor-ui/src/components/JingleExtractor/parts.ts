@@ -112,6 +112,48 @@ export const PARTS = {
   buttonRow: 'button-row',
   previewButton: 'preview-button',
   exportButton: 'export-button',
+
+  // ══ Shared primitives ════════════════════════════════════════════════════
+  // These are consumed by extracted reusable components (SegmentedControl,
+  // DataList, etc.) and may also be used by domain components.
+
+  // ── Segmented control ──────────────────────────────────────────────────
+  segmentedControl: 'segmented-control',
+  segmentedBtn: 'segmented-btn',
+
+  // ── Data list ──────────────────────────────────────────────────────────
+  dataList: 'data-list',
+  dataListRow: 'data-list-row',
+  dataListCell: 'data-list-cell',
+  dataListBadge: 'data-list-badge',
+  dataListActionBtn: 'data-list-action-btn',
+
+  // ── Button variants (shared) ───────────────────────────────────────────
+  btnPrimary: 'btn-primary',
+  btnSecondary: 'btn-secondary',
+  btnDanger: 'btn-danger',
+  btnIcon: 'btn-icon',
+
+  // ── Form field primitives ──────────────────────────────────────────────
+  fieldGroup: 'field-group',
+  fieldLabel: 'field-label',
+  fieldError: 'field-error',
+  textareaField: 'textarea-field',
+  textField: 'text-field',
+  numberField: 'number-field',
+
+  // ── Panel / inspector sections ─────────────────────────────────────────
+  panelHeader: 'panel-header',
+  panelSection: 'panel-section',
+  panelSectionLabel: 'panel-section-label',
+  panelRow: 'panel-row',
+  panelRowLabel: 'panel-row-label',
+  panelRowValue: 'panel-row-value',
+
+  // ── Status / info badges ────────────────────────────────────────────────
+  statusBadge: 'status-badge',
+  sourceBadge: 'source-badge',
+  keepBadge: 'keep-badge',
 } as const;
 
 export type PartName = (typeof PARTS)[keyof typeof PARTS];
