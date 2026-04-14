@@ -24,7 +24,7 @@ RelatedFiles:
       Note: Investigated creator-oriented output framing for UX guidance
 ExternalSources: []
 Summary: Chronological research diary for the MiniMax generation and track selection design ticket.
-LastUpdated: 2026-04-14T16:48:09.409104937-04:00
+LastUpdated: 2026-04-14T22:52:00-04:00
 WhatFor: Capture the investigation process, evidence collection, and delivery steps for JINGLE-011.
 WhenToUse: Use when reviewing how the design was assembled or continuing the research/implementation stream later.
 ---
@@ -250,3 +250,116 @@ Key source files inspected for widget inventory:
 find jingle-extractor-ui/src/components -maxdepth 2 -name '*.tsx' | sort
 rg -n "interface .*Props|export function|type .*Props" jingle-extractor-ui/src/components -g '*.tsx'
 ```
+
+## Step 3: Take over primitive extraction, fix visual regressions, and restore parity with legacy widgets
+
+After the first extraction pass, the new primitives technically compiled but visually drifted from the baseline UI language. The user correctly called out that the DataList looked worse than the old CandidateList. I paused feature expansion and treated this as a consistency/quality recovery step: get the extracted primitives visually coherent first, then continue with new feature surfaces.
+
+The most important correction was architectural, not cosmetic: shared primitive CSS had been unscoped to make Storybook stories render, but that broke consistency with the existing styling model (`[data-widget='jingle-extractor'] [data-part='...']`). I restored the original scoping model and fixed Storybook rendering the right way by wrapping stories with a widget-root decorator.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Ok, we're tkaing over for your small brother who si kind of making a mess of the CSS and widgets as they were extracting primitives. Go over their work and address the inconsistencies compared to where we started, and suggest improvements."
+
+**Assistant interpretation:** Audit the primitive extraction changes, identify where visuals/architecture drifted from the baseline widget system, fix those inconsistencies, and provide a concrete improvement plan.
+
+**Inferred user intent:** Preserve the original polished visual language while still moving toward reusable primitives, avoiding regressions masked as refactors.
+
+**Commit (code):** f28e73d — "fix(ui): restore primitive style consistency and DataList parity"
+
+### What I did
+- Audited extraction commits and uncommitted changes:
+  - `2907fdf` (shared parts + shared css)
+  - `75fcdad` (SegmentedControl)
+  - uncommitted DataList work + CSS overrides
+- Identified root causes of visual regressions:
+  1. **DataList action buttons wrapping to a second row** because row actions were rendered as an extra grid cell without allocating an extra grid column.
+  2. **Storybook style mismatch** caused by unscoped shared CSS selectors (global `[data-part=...]`) diverging from baseline scoped selectors.
+  3. **Primitive stories not mounted under widget root**, so scoped styles did not apply in isolation.
+- Implemented fixes:
+  - Added explicit action-column support to `DataList` (`actionColumnWidth` + auto width fallback)
+  - Restored shared CSS scoping to `[data-widget='jingle-extractor']` in:
+    - `shared/button.css`
+    - `shared/segmented-control.css`
+    - `shared/panel.css`
+  - Updated `DataList.css` to match legacy row density and action-button behavior
+  - Added Storybook decorators to primitive stories so they render inside:
+    - `data-widget='jingle-extractor'`
+    - `data-je-theme='retro'`
+  - Added a dedicated `DataList` parity story:
+    - `CandidateList parity (legacy look)`
+- Validated by rebuilding UI:
+  - `cd jingle-extractor-ui && npm run build`
+
+### Why
+- Visual regressions in primitive extraction are risky: they undermine trust in the design system and make downstream feature work (studio screen) harder to review.
+- The extraction goal is reuse **without** changing the visual contract users already validated.
+- Keeping scoped selectors and adding story decorators is the lowest-risk way to preserve baseline behavior and still have isolated primitive docs.
+
+### What worked
+- Converting DataList action column from implicit overflow to explicit grid column fixed the largest visual break immediately.
+- Adding a parity story made “looks like baseline?” objectively reviewable instead of subjective.
+- Restoring scoped CSS brought primitive behavior back in line with the existing component architecture.
+
+### What didn't work
+- Initial attempt to fix Storybook by unscoping shared CSS globally produced style drift and inconsistencies.
+- Storybook error around `SegmentedControl` first looked like provider/config issues, but the actual root cause was a missing stylesheet import path during iterative edits.
+- Multiple commands were initially run from the repo root instead of `jingle-extractor-ui`, causing `npm run build`/script confusion until corrected.
+
+### What I learned
+- For this codebase, **widget-root scoping is a core styling invariant**, not optional.
+- Primitive stories should emulate runtime context with decorators rather than forcing global CSS behavior.
+- “Parity stories” are essential when replacing legacy widgets with primitives.
+
+### What was tricky to build
+- The trickiest part was balancing two competing goals:
+  1. Storybook isolation convenience
+  2. strict compatibility with baseline scoped styling
+- Unscoping CSS fixed one problem (stories) while causing another (drift). The stable solution was to keep scoping and introduce decorators in stories.
+- Another subtle issue: DataList action UI looked broken not because icon styles were wrong, but because the grid template omitted the action column, causing wrap artifacts that looked like glyph/render bugs.
+
+### What warrants a second pair of eyes
+- Whether `DataList` should own action column width calculation or require explicit `actionColumnWidth` always.
+- Whether icon-button visuals should be unified under a single primitive (`btn-icon`) or allow per-list overrides for parity.
+- Whether scoped shared primitives should live only under `shared/` or be split into “strict baseline” vs “studio-next” variants.
+
+### What should be done in the future
+- Migrate one existing widget (`CandidateList`) to `DataList` behind a parity check story before broader adoption.
+- Add visual regression snapshots for parity stories.
+- Introduce a tiny `WidgetStoryDecorator` helper so all future primitive stories get consistent widget+theme wrapping.
+
+### Code review instructions
+- Start with these files:
+  - `jingle-extractor-ui/src/components/DataList/DataList.tsx`
+  - `jingle-extractor-ui/src/components/DataList/DataList.css`
+  - `jingle-extractor-ui/src/components/DataList/DataList.stories.tsx`
+  - `jingle-extractor-ui/src/components/shared/button.css`
+  - `jingle-extractor-ui/src/components/shared/segmented-control.css`
+  - `jingle-extractor-ui/src/components/shared/panel.css`
+  - `jingle-extractor-ui/src/components/SegmentedControl/SegmentedControl.stories.tsx`
+- Validate with:
+  - `cd jingle-extractor-ui && npm run build`
+  - open Storybook and compare:
+    - `CandidateList` legacy stories
+    - `DataList` parity story
+- Confirm there is no action-button row wrap and selected-row contrast still matches baseline.
+
+### Technical details
+
+Commands used in this cleanup step:
+
+```bash
+cd /home/manuel/code/wesen/2026-04-13--jingle-extraction
+
+git status --short
+git log --oneline -n 12
+
+cd jingle-extractor-ui
+npm run build
+
+# Visual validation stories
+# /iframe.html?id=jingleextractor-datalist--track-list
+# /iframe.html?id=jingleextractor-datalist--candidate-list-parity
+# /iframe.html?id=jingleextractor-candidatelist--none-selected
+```
+
