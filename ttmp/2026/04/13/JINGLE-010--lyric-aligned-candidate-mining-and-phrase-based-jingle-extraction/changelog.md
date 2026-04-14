@@ -24,3 +24,15 @@ Added a detailed intern-facing onboarding guide mapping the current FastAPI + Re
 
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/ttmp/2026/04/13/JINGLE-010--lyric-aligned-candidate-mining-and-phrase-based-jingle-extraction/design/02-current-system-vs-jingle-001-port-map-and-implementation-guide.md — Primary onboarding analysis and implementation guide
 
+
+## 2026-04-14
+
+Implemented the first lyric-aligned candidate miner by adding candidate_mode and lyric padding fields, extracting shared mining logic into a backend service, wiring both pipeline and remine through it, and tuning the Vocal Hooks preset threshold after live comparison against the rhythmic vocal-overlap miner on thrash_metal_01.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/presets.py — Vocal Hooks preset retuned for lyric-aligned scoring
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/mine.py — Remine route now supports lyric-aligned mining from stored vocal segments
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/services/candidate_mining.py — Shared rhythmic and lyric-aligned candidate construction service
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/DebugPanel/DebugPanel.tsx — UI summary exposes candidate strategy and lyric padding
+
