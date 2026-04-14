@@ -1,20 +1,10 @@
 /**
  * button.css — Shared button variants for all JingleExtractor widgets.
  *
- * All selectors use [data-part="btn-*"] so they can be placed on any element.
- * Consumed by: CandidateDetail, ConfigEditor, CandidateList row buttons, and
- * all future Studio screen components.
- *
- * Theme via: --je-color-selected, --je-color-selected-text,
- *            --je-color-surface, --je-color-bg, --je-color-text,
- *            --je-color-border, --je-color-error, --je-color-error-text,
- *            --je-border-width, --je-border-radius, --je-space-*, --je-font-*
+ * Scoped to the widget root to stay consistent with existing component CSS.
  */
 
-/* ── Primary button ──────────────────────────────────────────────────────── */
-/* Solid dark background, white text. Used for the main CTA. */
-
-[data-part='btn-primary'] {
+[data-widget='jingle-extractor'] [data-part='btn-primary'] {
   background: var(--je-color-selected, #000);
   color: var(--je-color-selected-text, #fff);
   border: var(--je-border-width, 2px) solid var(--je-color-border, #000);
@@ -29,26 +19,16 @@
   line-height: 1;
 }
 
-[data-part='btn-primary']:hover {
-  opacity: 0.85;
-}
-
-[data-part='btn-primary']:active {
-  opacity: 1;
-  transform: translateY(1px);
-}
-
-[data-part='btn-primary']:disabled,
-[data-part='btn-primary'][data-disabled='true'] {
+[data-widget='jingle-extractor'] [data-part='btn-primary']:hover { opacity: 0.85; }
+[data-widget='jingle-extractor'] [data-part='btn-primary']:active { transform: translateY(1px); }
+[data-widget='jingle-extractor'] [data-part='btn-primary']:disabled,
+[data-widget='jingle-extractor'] [data-part='btn-primary'][data-disabled='true'] {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
 }
 
-/* ── Secondary button ─────────────────────────────────────────────────────── */
-/* White background, dark text. Used for secondary / cancel actions. */
-
-[data-part='btn-secondary'] {
+[data-widget='jingle-extractor'] [data-part='btn-secondary'] {
   background: var(--je-color-surface, #fff);
   color: var(--je-color-text, #000);
   border: var(--je-border-width, 2px) solid var(--je-color-border, #000);
@@ -56,27 +36,17 @@
   padding: var(--je-space-3, 6px) 0;
   font-size: var(--je-font-size-md, 11px);
   font-family: var(--je-font-family, monospace);
-  font-weight: var(--je-font-weight-normal, 400);
   flex: 1;
   cursor: pointer;
   text-align: center;
   line-height: 1;
 }
 
-[data-part='btn-secondary']:hover {
+[data-widget='jingle-extractor'] [data-part='btn-secondary']:hover {
   background: var(--je-color-bg, #c0c0c0);
 }
 
-[data-part='btn-secondary']:disabled,
-[data-part='btn-secondary'][data-disabled='true'] {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* ── Danger button ────────────────────────────────────────────────────────── */
-/* Red background for destructive actions. */
-
-[data-part='btn-danger'] {
+[data-widget='jingle-extractor'] [data-part='btn-danger'] {
   background: var(--je-color-error, #cc0000);
   color: var(--je-color-text-inverse, #fff);
   border: var(--je-border-width, 2px) solid var(--je-color-border, #000);
@@ -91,47 +61,31 @@
   line-height: 1;
 }
 
-[data-part='btn-danger']:hover {
-  opacity: 0.85;
-}
-
-/* ── Icon button ──────────────────────────────────────────────────────────── */
-/* Fixed-size square button for toolbar actions (preview ▶, keep ★, etc.) */
-
-[data-part='btn-icon'] {
+/* Icon buttons match existing candidate preview style */
+[data-widget='jingle-extractor'] [data-part='btn-icon'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 24px;
-  height: 24px;
+  height: 22px;
   background: var(--je-color-surface, #fff);
   color: var(--je-color-text, #000);
-  border: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+  border: none;
   border-radius: var(--je-border-radius, 4px);
   padding: 0;
   font-size: var(--je-font-size-sm, 10px);
   font-family: var(--je-font-family, monospace);
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
   line-height: 1;
 }
 
-/* When a row is selected, invert icon button colors */
-[data-widget='jingle-extractor']
-  [data-part='data-list-row'][aria-selected='true']
-  [data-part='btn-icon'] {
+[data-widget='jingle-extractor'] [data-part='data-list-row'][aria-selected='true'] [data-part='btn-icon'],
+[data-widget='jingle-extractor'] [data-part='candidate-row'][aria-selected='true'] [data-part='btn-icon'] {
   background: var(--je-color-selected-text, #fff);
   color: var(--je-color-selected, #000);
 }
 
-[data-part='btn-icon']:hover {
-  background: var(--je-color-bg, #c0c0c0);
-  color: var(--je-color-text, #000);
-}
-
-/* ── Button row (shared layout) ────────────────────────────────────────────── */
-
-[data-part='button-row'] {
+[data-widget='jingle-extractor'] [data-part='button-row'] {
   display: flex;
   gap: var(--je-space-2, 4px);
   padding-top: var(--je-space-3, 6px);

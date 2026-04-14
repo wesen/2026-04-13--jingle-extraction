@@ -5,6 +5,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { SegmentedControl } from './SegmentedControl';
+import { WIDGET } from '../JingleExtractor/parts';
 
 const meta = {
   component: SegmentedControl,
@@ -13,6 +14,13 @@ const meta = {
   parameters: {
     layout: 'padded',
   },
+  decorators: [
+    (Story) => (
+      <div data-widget={WIDGET} data-je-theme="retro" style={{ padding: 8 }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof SegmentedControl>;
 
 export default meta;

@@ -20,7 +20,9 @@
 
 import type { ReactNode } from 'react';
 import { PARTS } from '../JingleExtractor/parts';
-import './SegmentedControl.css';
+// Shared styles are loaded here so stories render correctly outside the
+// JingleExtractor widget context.
+import '../shared/index.css';
 
 export interface SegmentedControlOption<T extends string = string> {
   value: T;

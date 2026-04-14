@@ -1,0 +1,78 @@
+/** DataList.css — generic dense list primitive (scoped to widget root). */
+
+[data-widget='jingle-extractor'] [data-part='data-list'] {
+  padding: var(--je-space-1, 2px);
+  overflow: hidden;
+}
+
+[data-widget='jingle-extractor'] [data-part='data-list-row'] {
+  display: grid;
+  align-items: center;
+  gap: var(--je-space-2, 4px);
+  padding: var(--je-space-2, 4px) var(--je-space-4, 8px);
+  cursor: pointer;
+  border-bottom: var(--je-border-width, 2px) solid var(--je-color-border, #000);
+  font-size: var(--je-font-size-md, 11px);
+  background: transparent;
+  color: var(--je-color-text, #000);
+  font-family: var(--je-font-family, monospace);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+[data-widget='jingle-extractor'] [data-part='data-list-row']:hover {
+  background: var(--je-color-bg, #c0c0c0);
+}
+
+[data-widget='jingle-extractor'] [data-part='data-list-row'][aria-selected='true'] {
+  background: var(--je-color-selected, #000);
+  color: var(--je-color-selected-text, #fff);
+}
+
+[data-widget='jingle-extractor'] [data-part='data-list-cell'] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+[data-widget='jingle-extractor'] [data-part='data-list-cell'][data-align='center'] {
+  justify-content: center;
+}
+
+[data-widget='jingle-extractor'] [data-part='data-list-cell'][data-align='right'] {
+  justify-content: flex-end;
+}
+
+[data-widget='jingle-extractor'] [data-part='data-list-cell'][data-is-action='true'] {
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+[data-widget='jingle-extractor'] [data-part='data-list-action-btn'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* keep action buttons visually aligned with legacy candidate preview button */
+[data-widget='jingle-extractor'] [data-part='data-list-action-btn'] > button {
+  width: 24px;
+  height: 22px;
+  border: none;
+  border-radius: var(--je-border-radius, 4px);
+  background: var(--je-color-surface, #fff);
+  color: var(--je-color-text, #000);
+  font-size: var(--je-font-size-sm, 10px);
+  font-family: var(--je-font-family, monospace);
+  cursor: pointer;
+}
+
+[data-widget='jingle-extractor']
+  [data-part='data-list-row'][aria-selected='true']
+  [data-part='data-list-action-btn'] > button {
+  background: var(--je-color-selected-text, #fff);
+  color: var(--je-color-selected, #000);
+}
