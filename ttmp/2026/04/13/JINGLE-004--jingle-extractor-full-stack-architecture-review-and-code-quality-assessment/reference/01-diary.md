@@ -37,6 +37,8 @@ RelatedFiles:
       Note: Step 13 local edit context and reset affordance
     - Path: jingle-extractor-ui/src/components/CandidateList/CandidateList.tsx
       Note: Step 13 edited candidate visual indicator
+    - Path: jingle-extractor-ui/src/components/DebugPanel/DebugPanel.tsx
+      Note: Step 16 timestamp debug panel
     - Path: jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx
       Note: Validation-time callback fix and root runtime review
     - Path: jingle-extractor-ui/src/components/Timeline/Timeline.test.tsx
@@ -48,11 +50,14 @@ RelatedFiles:
     - Path: jingle-extractor-ui/src/components/TransportBar/TransportBar.playback.test.tsx
       Note: Step 11 transport/playhead interaction test
     - Path: jingle-extractor-ui/src/features/analysis/analysisSlice.ts
-      Note: Step 13 local-only candidate edit state model
+      Note: |-
+        Step 13 local-only candidate edit state model
+        Step 16 default stem switched to original
     - Path: jingle-extractor-ui/src/hooks/useAudioPlayer.ts
       Note: |-
         Playback hook validation findings
         Playback controller refactor and event model implemented in Step 10
+        Step 16 preview playback offset and single-preview enforcement
     - Path: jingle-extractor-ui/vitest.config.ts
       Note: Minimal Vitest configuration added to run source tests without Storybook include patterns
     - Path: ttmp/2026/04/13/JINGLE-004--jingle-extractor-full-stack-architecture-review-and-code-quality-assessment/scripts/validate_export_stems.py
@@ -63,6 +68,7 @@ LastUpdated: 2026-04-13T21:48:00-04:00
 WhatFor: Capture how the review was performed, what evidence was gathered, what validation passed or failed, and how to continue the investigation later.
 WhenToUse: Use when continuing the JINGLE-004 review, verifying claims in the design doc, or replaying the investigation commands.
 ---
+
 
 
 
@@ -1646,3 +1652,46 @@ There was also a type-shape subtlety in the stories themselves. Some stories had
   - `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/.storybook/preview.tsx`
   - story files under `/home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/`
 - Tasks completed in this step: 54, 55, 56, 57, 58, 86
+
+## Step 16: Improve preview playback semantics and add a timestamp debug window
+
+After getting the servers back up for manual testing, I addressed a set of runtime UX issues the user found while exercising the live app. The key complaints were:
+- previewing a clip hit `POST /api/export`, but the transport playhead still appeared to start from zero instead of from the candidate's actual track position
+- repeated preview clicks could leave multiple overlapping preview playbacks running
+- it was hard to understand whether lyric timestamps and mined jingle timestamps actually lined up
+- the default stem should be `Original`, not `Instrumental`
+
+This step improved the playback controller semantics and added a dedicated debug window for timestamp inspection.
+
+### Prompt Context
+
+**User prompts (verbatim excerpts):**
+- "when previewing a clip, but then the play head still starts at the beginning"
+- "I want to see the timestamps for the lyrics and the timestamps for the extracted jingles"
+- "maybe we can have a debug window that shows a table with the jingle timestamps and one with the lyrics timestamps"
+- "Also per default I want the selection to be 'Original' (not Instrumental)"
+- "also, only allow one preview to be running at a time"
+
+**Assistant interpretation:** The playback controller needed to treat exported preview blobs as windows into the full track timeline, not as disconnected zero-based clips, and the UI needed a visible debugging surface for lyric/jingle timing comparison.
+
+### What I changed
+- Updated `useAudioPlayer` so preview clips track an absolute timeline offset (`start`) and project `timeupdate` events back onto the full-track playhead
+- Added cancellation/token logic so new preview requests supersede older ones and repeated preview clicks cannot leave multiple active preview playbacks racing in parallel
+- Added preview toggling by candidate: clicking the currently previewing candidate's preview button now stops that preview
+- Changed the default selected stem from `inst` to `orig` in `analysisSlice`
+- Added a new `DebugPanel` component showing:
+  - extracted jingle timestamps table
+  - lyric segment timestamps table
+  - current preset/config summary
+  - overlap highlighting against the selected candidate
+- Integrated the debug panel into `JingleExtractor` as a new MacWindow below the candidate/detail area
+- Updated candidate list/detail buttons to reflect the active preview state
+- Added a focused Vitest test covering absolute playhead projection for preview clips
+
+### Validation
+- `cd jingle-extractor-ui && npm run build` ✅
+- `cd jingle-extractor-ui && npx vitest run --config vitest.config.ts src/hooks/useAudioPlayer.preview.test.tsx` ✅
+
+### Notes
+- Lint status did not regress; the repo remains in the same "warnings only" state as the previous Storybook cleanup step.
+- The Vite dev server should hot-reload these UI changes, so manual testing can continue immediately in the running frontend.

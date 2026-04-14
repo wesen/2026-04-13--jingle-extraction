@@ -128,3 +128,14 @@ Aligned Storybook stories with the React-Vite framework package, removed obsolet
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/eslint.config.js — Source-only lint scope for Storybook/generated assets
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/package.json — Removed unused msw-storybook-addon dependency
 
+
+## 2026-04-13
+
+Improved preview playback semantics by projecting exported clip playback onto the full-track timeline, preventing overlapping preview races, switching the default stem to Original, and adding a debug timestamp window for jingle/lyric comparison.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/DebugPanel/DebugPanel.tsx — Candidate vs lyric timestamp inspection UI
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx — Preview toggle wiring and debug window integration
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/hooks/useAudioPlayer.ts — Absolute preview timeline projection and preview race control
+
