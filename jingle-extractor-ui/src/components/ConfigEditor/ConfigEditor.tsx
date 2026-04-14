@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { AnalysisConfig } from '../../api/types';
 import { PARTS } from '../JingleExtractor/parts';
+import { SegmentedControl } from '../SegmentedControl';
 import './ConfigEditor.css';
 
 interface ConfigEditorProps {
@@ -71,24 +72,17 @@ export function ConfigEditor({
 
   return (
     <div data-part={PARTS.configEditor} style={style}>
-      <div data-part={PARTS.configStrategyRow} role="group" aria-label="Candidate mining strategy">
-        <button
-          type="button"
-          data-part={PARTS.configStrategyButton}
-          aria-pressed={config.candidate_mode === 'rhythmic'}
-          onClick={() => handleStrategyChange('rhythmic')}
-        >
-          Rhythmic
-        </button>
-        <button
-          type="button"
-          data-part={PARTS.configStrategyButton}
-          aria-pressed={config.candidate_mode === 'lyric_aligned'}
-          onClick={() => handleStrategyChange('lyric_aligned')}
-        >
-          Lyric aligned
-        </button>
-      </div>
+      <SegmentedControl
+        value={config.candidate_mode}
+        options={[
+          { value: 'rhythmic', label: 'Rhythmic' },
+          { value: 'lyric_aligned', label: 'Lyric aligned' },
+        ]}
+        onChange={handleStrategyChange}
+        label="Candidate mining strategy"
+        rootPart={PARTS.configStrategyRow}
+        buttonPart={PARTS.configStrategyButton}
+      />
 
       {/* JSON textarea */}
       <textarea

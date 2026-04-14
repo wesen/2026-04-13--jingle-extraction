@@ -41,6 +41,10 @@ interface SegmentedControlProps<T extends string = string> {
   label?: string;
   /** Additional class name on the root element */
   className?: string;
+  /** Optional compatibility override for root data-part */
+  rootPart?: string;
+  /** Optional compatibility override for button data-part */
+  buttonPart?: string;
 }
 
 export function SegmentedControl<T extends string = string>({
@@ -49,10 +53,12 @@ export function SegmentedControl<T extends string = string>({
   onChange,
   label,
   className,
+  rootPart,
+  buttonPart,
 }: SegmentedControlProps<T>) {
   return (
     <div
-      data-part={PARTS.segmentedControl}
+      data-part={rootPart ?? PARTS.segmentedControl}
       role="group"
       aria-label={label}
       className={className}
@@ -62,7 +68,7 @@ export function SegmentedControl<T extends string = string>({
         return (
           <button
             key={opt.value}
-            data-part={PARTS.segmentedBtn}
+            data-part={buttonPart ?? PARTS.segmentedBtn}
             type="button"
             aria-pressed={isActive}
             aria-disabled={opt.disabled || undefined}

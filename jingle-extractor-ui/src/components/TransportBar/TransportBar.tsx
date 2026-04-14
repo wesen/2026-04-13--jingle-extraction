@@ -8,6 +8,7 @@
 import type { StemType } from '../../api/types';
 import { fmt } from '../../utils/format';
 import { PARTS } from '../JingleExtractor/parts';
+import { SegmentedControl } from '../SegmentedControl';
 import './TransportBar.css';
 
 const STEM_OPTIONS: { value: StemType; label: string }[] = [
@@ -42,18 +43,14 @@ export function TransportBar({
   return (
     <div data-part={PARTS.transportBar} role="toolbar" aria-label="Playback transport">
       {/* Stem toggle */}
-      <div data-part={PARTS.stemToggle} role="group" aria-label="Audio stem">
-        {STEM_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            data-part={PARTS.stemButton}
-            aria-pressed={stem === opt.value}
-            onClick={() => onStemChange(opt.value)}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        value={stem}
+        options={STEM_OPTIONS}
+        onChange={onStemChange}
+        label="Audio stem"
+        rootPart={PARTS.stemToggle}
+        buttonPart={PARTS.stemButton}
+      />
 
       {/* Spacer */}
       <span data-part={PARTS.transportSpacer} />
