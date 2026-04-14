@@ -21,6 +21,14 @@ topics:
       description: storybook topic
     - slug: vite
       description: vite topic
+    - slug: architecture
+      description: Architecture analysis, system structure, and design review work.
+    - slug: fastapi
+      description: FastAPI backend service design and implementation topics.
+    - slug: frontend
+      description: Frontend architecture, React UI implementation, and client-side review topics.
+    - slug: review
+      description: Code review, architecture review, and assessment deliverables.
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
