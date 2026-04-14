@@ -38,4 +38,8 @@ Thumbs.db
 checkpoints/
 pretrained/
 
+# Generated frontend/backend runtime artifacts
+jingle-extractor-ui/storybook-static/
+jingle-extractor-backend/data/
+
 .envrc

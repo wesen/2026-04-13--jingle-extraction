@@ -1,19 +1,10 @@
 import type { Preview } from '@storybook/react-vite';
 import { Provider } from 'react-redux';
-import { store } from '../src/app/store';
+import { configureStore } from '@reduxjs/toolkit';
 import '../src/app/theme/tokens.css';
 import '../src/app/theme/theme-retro.css';
 import '../src/app/theme/theme-dark.css';
 import '../src/app/theme/theme-light.css';
-import { initialize, mswLoader } from 'msw-storybook-addon';
-
-/**
- * Initialize MSW for Storybook.
- * This starts a service worker that intercepts fetch requests.
- */
-initialize({
-  onUnhandledRequest: 'bypass',
-});
 
 const preview: Preview = {
   parameters: {
@@ -29,19 +20,30 @@ const preview: Preview = {
   },
 
   /**
-   * Wrap every story with the Redux Provider.
+   * Wrap every story with the Redux Provider (for stories that need it).
    */
   decorators: [
+    // eslint-disable-next-line react/display-name
     (Story) => (
-      <Provider store={store}>
+      <Provider
+        store={configureStore({
+          reducer: {
+            analysis: () => ({ theme: 'retro' }),
+            audio: () => ({
+              isPlaying: false,
+              currentTime: 0,
+              duration: 0,
+              volume: 1,
+            }),
+          },
+        })}
+      >
         <div data-widget="jingle-extractor" data-je-theme="retro">
           <Story />
         </div>
       </Provider>
     ),
   ],
-
-  loaders: [mswLoader],
 };
 
 export default preview;

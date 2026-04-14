@@ -34,10 +34,10 @@ async def analyze(request: AnalyzeRequest, background_tasks: BackgroundTasks):
             track_id=track_id, status=AnalysisStatus.COMPLETE
         )
 
-    db.create_track(track_id, str(audio_path), status=AnalysisStatus.UPLOADED.value)
-
-    # Lazy import to avoid pulling in heavy ML deps at test time
+    # Lazy import to avoid pulling in heavy ML deps at module level
     from app.pipeline import run_pipeline
+
+    db.create_track(track_id, str(audio_path), status=AnalysisStatus.UPLOADED.value)
 
     background_tasks.add_task(run_pipeline, track_id, str(audio_path), request.config)
 
