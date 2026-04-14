@@ -169,3 +169,84 @@ nl -ba jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx | 
 nl -ba jingle-extractor-ui/src/features/analysis/analysisSlice.ts | sed -n '1,260p'
 nl -ba out/vocal_jingles/README.md | sed -n '1,220p'
 ```
+
+## Step 2: Simplify the UX to one studio screen and add a widget inventory for design handoff
+
+After the first draft, the user clarified that the UX should be simpler: one main screen for generation, current-run results, and the library, with a later switch into the existing jingle-mining screen only when needed. That changed the document from a multi-view studio shell proposal into a tighter two-screen model: one **Studio** screen plus the existing **Mining** screen.
+
+I updated the design doc accordingly and added a concise YAML DSL plus a full inventory of the existing React widgets and their props. That way the UX designer gets both a conceptual layout and a concrete list of components that already exist in the design system.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Ok, we only want a single UX screen, we don't want to overcomplicate it. Also make a concise YAML DSL representation of the react widgets you would use as a concise representation of the markup. We don't need to compare, just a view of the library, of the current run and results, and the possibility to analyze them and then switch to the jingle mining screen. 
+
+You can use new widgets if they don't exist yet in the YAML, but reuse if possible, that way we can leverage our sdesign system and hand it off to the UX designer. Update and reupload to remarkable."
+
+**Assistant interpretation:** Simplify the proposed IA to a single studio screen, remove compare mode, represent the UI in a concise widget YAML, and update the ticket deliverables for UX/design handoff.
+
+**Inferred user intent:** Keep the product approachable and give the UX designer a practical, component-aware handoff rather than a broad architecture-only proposal.
+
+### What I did
+- Reworked the design doc from a three-workspace proposal into:
+  - one main `Studio` screen,
+  - one existing `Mining` screen for the handoff target
+- Removed compare-mode emphasis from the proposed UI and phased plan
+- Added a concise YAML DSL representation of the intended studio-screen widget tree
+- Added a full inventory of the existing React widgets with their props, including:
+  - `MacWindow`
+  - `MenuBar`
+  - `PresetPanel`
+  - `ConfigEditor`
+  - `TransportBar`
+  - `Timeline`
+  - `CandidateList`
+  - `CandidateDetail`
+  - `ScoreBar`
+  - `DebugPanel`
+  - `JingleExtractor`
+- Updated the ticket docs and prepared them for re-upload to reMarkable
+
+### Why
+- The simplified one-screen studio concept is a better fit for the stated product direction
+- The YAML DSL makes the proposed layout easier to discuss with a designer
+- The widget inventory reduces handoff ambiguity and increases the chance of reusing the existing system instead of designing from scratch
+
+### What worked
+- The current component library is already rich enough to provide meaningful reuse guidance
+- `MacWindow` and `MenuBar` remain especially useful anchors for the visual system
+- `CandidateDetail` turned out to be a strong precedent for the future `TrackInspector` concept
+
+### What didn't work
+- N/A beyond the earlier course correction that the initial design had become too multi-screen and too heavy on compare mode
+
+### What I learned
+- The user wanted stronger design-handoff material, not just architecture prose
+- A widget inventory with real props is much more actionable for UX/design collaboration than just naming conceptual components
+
+### What was tricky to build
+- The tricky part was keeping the design doc internally consistent after simplifying the IA. Several sections referenced compare mode or separate library views, so the update required touching not just the mockups but also the pseudocode, implementation phases, and validation framing.
+
+### What warrants a second pair of eyes
+- Whether `MenuBar` should be adapted directly for the studio screen or wrapped by a studio-specific header component
+- Whether the future `TrackResultsList` and `TrackLibraryList` should be separate widgets or one generalized list component with mode-specific columns
+
+### What should be done in the future
+- Implement the studio screen using the new widget inventory as the reuse baseline
+- Keep the design system handoff artifact updated as new reusable widgets are added
+
+### Code review instructions
+- Re-read the following sections in the design doc:
+  - `Proposed solution overview`
+  - `Proposed UI design`
+  - `Concise YAML DSL for the studio screen`
+  - `Existing widget inventory available today`
+- Verify that compare-mode references were removed from the core direction and that the simplified IA is coherent
+
+### Technical details
+
+Key source files inspected for widget inventory:
+
+```bash
+find jingle-extractor-ui/src/components -maxdepth 2 -name '*.tsx' | sort
+rg -n "interface .*Props|export function|type .*Props" jingle-extractor-ui/src/components -g '*.tsx'
+```

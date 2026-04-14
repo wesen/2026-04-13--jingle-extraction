@@ -30,7 +30,7 @@ ExternalSources: []
 Summary: Detailed intern-facing analysis and design for productizing MiniMax generation and track selection in the jingle extractor app.
 LastUpdated: 2026-04-14T16:48:09.320663574-04:00
 WhatFor: 'Design the next major product surface: generating multiple tracks with MiniMax, browsing them, comparing them, selecting keepers, and handing chosen tracks into the extraction workbench.'
-WhenToUse: Use when implementing generation APIs, track library/catalog UI, compare workflows, or onboarding engineers to the generation-to-extraction product model.
+WhenToUse: Use when implementing generation APIs, track library/catalog UI, studio-screen workflows, or onboarding engineers to the generation-to-extraction product model.
 ---
 
 
@@ -43,15 +43,14 @@ The repository already contains two important pieces of the future product, but 
 1. The original CLI pipeline already knows how to call MiniMax and create multiple generated tracks in a batch. That behavior lives in `jingle_extractor.py`, especially `minimax_generate()` and the `generate` / `full` commands (`jingle_extractor.py:66-127`, `jingle_extractor.py:422-434`, `jingle_extractor.py:488-547`).
 2. The productized frontend/backend stack already provides a reasonably strong extraction workbench for a single selected track. That workbench lives in the FastAPI routes and the React `JingleExtractor` shell (`jingle-extractor-backend/app/main.py:26-50`, `jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx:44-384`).
 
-The gap is that there is still no first-class product workflow for the step that comes before extraction: generating several candidate songs, auditioning them, comparing them, marking keepers, and explicitly selecting which track should enter analysis. Today the system jumps from “track path exists on disk” straight into “analyze this one track.” That is fine for engineering smoke tests, but it is not a believable workflow for a human operator who is actually making jingles.
+The gap is that there is still no first-class product workflow for the step that comes before extraction: generating several candidate songs, auditioning them, keeping the interesting ones visible, and explicitly selecting which track should enter analysis. Today the system jumps from “track path exists on disk” straight into “analyze this one track.” That is fine for engineering smoke tests, but it is not a believable workflow for a human operator who is actually making jingles.
 
-This document proposes a track-centric product model with three explicit work areas:
+This document now recommends a simpler track-centric product model with one main studio workspace plus the existing mining screen:
 
-- **Generate** — compose a MiniMax request, submit a batch, and watch progress.
-- **Library** — browse generated and imported tracks, preview them, compare them, and mark keep/reject decisions.
-- **Extract** — open one selected track in the existing extraction workbench and continue with analysis/mining/export.
+- **Studio screen** — compose a MiniMax request, watch the current run, browse the track library, inspect a selected track, and trigger analysis.
+- **Mining screen** — open one selected analyzed track in the existing extraction workbench and continue with analysis/mining/export.
 
-The recommendation is to **keep the existing extraction workbench mostly intact** and build a new top-level studio shell around it. On the backend, the recommendation is to add a dedicated generation service and routes, plus richer track catalog metadata, rather than overloading the existing path-based `/api/analyze` flow. The most important product move is to stop thinking in terms of “the current hard-coded track ID” and instead think in terms of **track assets with lineage**.
+The recommendation is to **keep the existing extraction workbench mostly intact** and add one focused studio screen in front of it rather than splitting the new UX into multiple tabs or modes. On the backend, the recommendation is to add a dedicated generation service and routes, plus richer track catalog metadata, rather than overloading the existing path-based `/api/analyze` flow. The most important product move is to stop thinking in terms of “the current hard-coded track ID” and instead think in terms of **track assets with lineage**.
 
 ---
 
@@ -77,12 +76,12 @@ This ticket is a research/design ticket, not a code-implementation ticket. It do
 
 - add a new generation route,
 - add a track-library UI,
-- add compare-mode playback,
+- add a production generation/library screen,
 - or change the extraction workbench runtime behavior.
 
 ### Why this scope matters
 
-The current product is strong at **post-selection analysis** but weak at **pre-selection creative iteration**. That mismatch matters because real jingle creation is not “analyze the only track that exists”; it is “generate a handful of candidates, discard weak ones quickly, compare the promising ones, then invest analysis time in the winner.”
+The current product is strong at **post-selection analysis** but weak at **pre-selection creative iteration**. That mismatch matters because real jingle creation is not “analyze the only track that exists”; it is “generate a handful of candidates, discard weak ones quickly, keep the interesting ones visible, and then invest analysis time in the winner.”
 
 ---
 
@@ -293,10 +292,9 @@ Observed implication:
 - track switching,
 - generation entry,
 - recent-run access,
-- compare mode,
 - or a library view.
 
-This matters because the top bar is one of the most natural places to expose “Generate / Library / Extract” mode switching in the current visual style.
+This matters because the top bar is one of the most natural places to expose studio context, selected-track context, and navigation back from mining without making the UI feel fragmented.
 
 ### 9. The original prototype also assumed a fixed mock track
 
@@ -350,7 +348,7 @@ write prompt / optional lyrics
 generate N track variants
       │
       ▼
-preview / compare / keep / reject
+preview / keep / reject
       │
       ▼
 select one (or several) tracks
@@ -370,11 +368,9 @@ extract jingles
    - the backend cannot show batch progress or a run history.
 3. **No first-class track library**
    - generated tracks cannot be browsed or triaged before analysis.
-4. **No compare workflow**
-   - operators cannot A/B multiple generated songs.
-5. **No track-centric analyze contract**
+4. **No track-centric analyze contract**
    - the product still leans on server-local file paths.
-6. **No product shell above the extractor**
+5. **No product shell above the extractor**
    - the existing UI assumes the track is already chosen.
 
 ---
@@ -411,7 +407,7 @@ For this particular app, good affordances include:
 
 - large primary “Generate” action,
 - clear batch/run grouping,
-- per-track actions: `Preview`, `Keep`, `Reject`, `Analyze`, `Compare`,
+- per-track actions: `Preview`, `Keep`, `Reject`, `Analyze`,
 - badges for `generated`, `instrumental`, `lyrics`, `analyzed`, `keeper`,
 - recent-run history,
 - selected-track inspector,
@@ -431,121 +427,387 @@ That would optimize for engineers, not creators.
 
 ## Proposed solution overview
 
-The proposed solution is a new **Studio Shell** around the existing extractor workbench.
+The proposed solution is a **single Studio screen** that combines three things in one place:
+
+1. the generation form,
+2. the current run results,
+3. the broader track library with a selected-track inspector.
+
+The existing `JingleExtractor` remains a separate, dedicated mining screen that the user enters only after choosing a track to analyze.
 
 ### Top-level information architecture
 
 ```text
 App shell
-├── Generate view   → create MiniMax runs, watch progress, inspect results
-├── Library view    → browse generated/imported tracks, keep/reject, compare
-└── Extract view    → open selected track in existing JingleExtractor workbench
+├── Studio screen   → generate, browse current run, browse library, inspect track
+└── Mining screen   → open selected track in existing JingleExtractor workbench
 ```
 
 ### Key design principle
 
-Do **not** rewrite the extraction workbench first. Instead:
+Do **not** invent three separate product views if one focused workspace is enough. Instead:
 
-- keep `JingleExtractor` as the specialized extract view,
-- create a top-level shell that owns the selected track,
-- and add generation/library surfaces beside it.
+- keep generation and library browsing together on one screen,
+- keep the current run visible without navigation,
+- keep a library pane visible for older tracks,
+- and hand off to `JingleExtractor` only when the user is ready to mine jingles.
 
-This minimizes risk and preserves the validated extraction work already completed under earlier tickets.
+This keeps the UX simple, preserves the validated mining workbench, and matches the user request to avoid overcomplication.
 
 ---
 
 ## Proposed UI design
 
-### Screen 1: Studio shell (default Generate view)
+### Primary screen: Studio screen
 
 ```text
-┌────────────────────────────────────────────────────────────────────────────────────────────┐
-│  🍎  Jingle Extractor Studio     Generate | Library | Extract        project: metal-lab  │
-├────────────────────────────────────────────────────────────────────────────────────────────┤
-│ ┌ Recent Runs ────────────────┐  ┌ Generate Tracks ────────────────────────────────────┐ │
-│ │ Today                       │  │ Prompt                                               │ │
-│ │ • Thrash hooks v4           │  │ [ death/thrash metal stings with chantable hook   ] │ │
-│ │ • Doom beds v2              │  │                                                     │ │
-│ │ Yesterday                   │  │ Lyrics (optional)                                    │ │
-│ │ • Podcast risers v1         │  │ [ [Hook] spinning power / burning fast ...       ] │ │
-│ │                             │  │                                                     │ │
-│ │ Filters                     │  │ Model: [music-2.6 ▼]  Count: [ 4 ]  Type: (•) vocal│ │
-│ │ [generated] [keepers]       │  │ Naming prefix: [ thrash_hook ]                     │ │
-│ │ [unanalyzed] [failed]       │  │                                                     │ │
-│ │                             │  │ [ Generate batch ] [ Save prompt ] [ Duplicate ]    │ │
-│ └─────────────────────────────┘  └─────────────────────────────────────────────────────┘ │
-│                                                                                            │
-│ ┌ Batch Results ─────────────────────────────────────────────────────────────────────────┐ │
-│ │ □ thrash_hook_01   0:55   generated   vocals   [▶] [Keep] [Reject] [Compare] [Analyze]│ │
-│ │ □ thrash_hook_02   0:56   generated   vocals   [▶] [Keep] [Reject] [Compare] [Analyze]│ │
-│ │ □ thrash_hook_03   0:54   generated   vocals   [▶] [Keep] [Reject] [Compare] [Analyze]│ │
-│ │ □ thrash_hook_04   0:55   generated   vocals   [▶] [Keep] [Reject] [Compare] [Analyze]│ │
-│ └────────────────────────────────────────────────────────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│ 🍎 Jingle Extractor Studio                                                selected: none    │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌ Generate Track Batch ───────────────────────┐ ┌ Current Run / Results ─────────────────┐ │
+│ │ Prompt                                      │ │ Run: Thrash hooks v5   status: complete │ │
+│ │ [ death/thrash metal stings with hook     ] │ │                                         │ │
+│ │                                             │ │ thrash_hook_01  0:55  vocal   [▶][Analyze]│ │
+│ │ Lyrics (optional)                           │ │ thrash_hook_02  0:56  vocal   [▶][Analyze]│ │
+│ │ [ [Hook] spinning power / burning fast   ] │ │ thrash_hook_03  0:54  vocal   [▶][Analyze]│ │
+│ │                                             │ │ thrash_hook_04  0:55  vocal   [▶][Analyze]│ │
+│ │ Model [music-2.6 ▼] Count [4]               │ │                                         │ │
+│ │ Type  (•) vocal  ( ) instrumental           │ │ [Preview selected] [Analyze selected]   │ │
+│ │ Prefix [ thrash_hook ]                      │ └─────────────────────────────────────────┘ │
+│ │                                             │                                              │
+│ │ [ Generate batch ] [ Save prompt ]          │ ┌ Library ────────────────────────────────┐ │
+│ └─────────────────────────────────────────────┘ │ Search [ thrash                   ]      │ │
+│                                                 │ Filters [all ▼] [generated ▼] [newest ▼] │ │
+│ ┌ Selected Track Inspector ───────────────────┐ │                                          │ │
+│ │ Track: thrash_hook_02                       │ │ ★ thrash_hook_02   generated  analyzed   │ │
+│ │ Prompt: death/thrash metal stings...        │ │   doom_bed_01      generated  pending    │ │
+│ │ Lyrics: [Hook] spinning power...            │ │   power_metal_01   analyzed   complete   │ │
+│ │ Status: generated / not analyzed            │ │   upload_take_03   imported   complete   │ │
+│ │ Duration: 0:56                              │ │                                          │ │
+│ │                                             │ │ click row to inspect / preview / analyze │ │
+│ │ [▶ Preview] [Analyze track] [Open in Mining]│ └──────────────────────────────────────────┘ │
+│ └─────────────────────────────────────────────┘                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 #### Why this screen works
 
-- It keeps the creative act of authoring a prompt visually central.
-- It treats batch results as first-class outputs, not hidden files.
-- It allows a user to stay in the same view while going from prompt submission to track triage.
+- It keeps the creation form, the fresh batch output, and the historical library visible at the same time.
+- It does not force the user to mentally switch between separate “Generate” and “Library” worlds.
+- It preserves the important distinction between the **studio workflow** and the **mining workflow** without fragmenting the studio itself.
+- It makes the handoff explicit: `Analyze track` first, then `Open in Mining` when analysis is ready.
 
-### Screen 2: Library / compare mode
+### Secondary screen: existing mining screen with light context bar
 
-```text
-┌────────────────────────────────────────────────────────────────────────────────────────────┐
-│  Library                                                                                  │
-├────────────────────────────────────────────────────────────────────────────────────────────┤
-│ ┌ Track Library ────────────────────────┐  ┌ Compare Tray ──────────────────────────────┐ │
-│ │ Search: [ thrash ]                    │  │ A: thrash_hook_02         [▶] 00:14-00:24 │ │
-│ │ Sort: [ newest ▼ ]                    │  │ B: thrash_hook_04         [▶] 00:14-00:24 │ │
-│ │                                       │  │                                              │ │
-│ │ ★ thrash_hook_02   keeper             │  │ Notes                                         │ │
-│ │   prompt: death/thrash metal...       │  │ - A has cleaner downbeat                     │ │
-│ │   tags: vocal / unanalyzed            │  │ - B has bigger chorus energy                 │ │
-│ │                                       │  │                                              │ │
-│ │   thrash_hook_04   pending            │  │ [ Keep A ] [ Keep B ] [ Analyze selected ]  │ │
-│ │   doom_bed_01      rejected           │  └──────────────────────────────────────────────┘ │
-│ │   power_metal_01   analyzed           │                                                  │
-│ └───────────────────────────────────────┘  ┌ Inspector ─────────────────────────────────┐ │
-│                                            │ Track: thrash_hook_02                      │ │
-│                                            │ Prompt: death/thrash metal ...             │ │
-│                                            │ Lyrics: [Hook] spinning power ...          │ │
-│                                            │ Model: music-2.6                           │ │
-│                                            │ Status: generated / not analyzed           │ │
-│                                            │ Actions: [Analyze] [Open in Extractor]     │ │
-│                                            └────────────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-#### Why this screen works
-
-- It supports the editorial act of A/B comparison.
-- It separates quick browse from deeper inspection.
-- It allows track status management without forcing analysis first.
-
-### Screen 3: Extract view with selected track switcher
+This ticket still assumes a separate mining screen, but it should remain minimal and familiar.
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────────┐
-│  🍎  Jingle Extractor Studio      Generate | Library | Extract      selected: hook_02    │
+│ 🍎 Jingle Extractor Mining                                               track: hook_02  │
 ├────────────────────────────────────────────────────────────────────────────────────────────┤
-│ ┌ Track Selector ────────────────────────────────────────────────────────────────────────┐ │
-│ │ Current: thrash_hook_02   generated / analyzed / keeper   [Change track] [Back to lib]│ │
-│ └────────────────────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                            │
-│ ┌ Existing extraction workbench (mostly unchanged) ─────────────────────────────────────┐ │
-│ │  Presets | Config | Transport | Timeline | Candidates | Detail | Debug                │ │
-│ │  ... current JingleExtractor UI ...                                                   │ │
-│ └────────────────────────────────────────────────────────────────────────────────────────┘ │
+│ [Back to Studio]   thrash_hook_02   generated / analyzed / ready                          │
+├────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Existing JingleExtractor workbench                                                         │
+│ Presets | Config | Transport | Timeline | Candidates | Detail | Debug                     │
 └────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-#### Why this screen works
+The mining screen should not gain generation UI. It remains the specialized screen for candidate mining and export.
 
-- It preserves the work already done in the extractor.
-- It makes track context explicit.
-- It allows the user to move back to the library without losing orientation.
+### Concise YAML DSL for the studio screen
+
+The goal of this YAML is not to be runtime code. It is a concise handoff representation of the intended React markup and widget composition so a UX designer can map it to the design system quickly.
+
+```yaml
+screen: StudioScreen
+widget: StudioShell
+props:
+  title: Jingle Extractor Studio
+children:
+  - widget: MenuBar
+    props:
+      mode: studio
+      selectedTrackLabel: "thrash_hook_02"
+
+  - widget: LayoutRow
+    props: { gap: md, align: stretch }
+    children:
+      - widget: LayoutColumn
+        props: { width: 0.42, gap: md }
+        children:
+          - widget: MacWindow
+            props: { title: "Generate Track Batch" }
+            children:
+              - widget: GenerationComposer   # new
+                props:
+                  fields:
+                    - prompt
+                    - lyrics
+                    - model
+                    - count
+                    - type
+                    - namingPrefix
+                  actions:
+                    - generateBatch
+                    - savePrompt
+
+          - widget: MacWindow
+            props: { title: "Selected Track Inspector" }
+            children:
+              - widget: TrackInspector       # new
+                props:
+                  sections:
+                    - summary
+                    - prompt
+                    - lyrics
+                    - status
+                    - actions
+                  actions:
+                    - preview
+                    - analyzeTrack
+                    - openInMining
+
+      - widget: LayoutColumn
+        props: { width: 0.58, gap: md }
+        children:
+          - widget: MacWindow
+            props: { title: "Current Run / Results" }
+            children:
+              - widget: RunSummaryBar       # new
+                props:
+                  fields: [runName, status, requestedCount, completedCount]
+              - widget: TrackResultsList    # new
+                props:
+                  rowActions: [preview, analyze]
+                  selectable: true
+
+          - widget: MacWindow
+            props: { title: "Library" }
+            children:
+              - widget: LibraryToolbar      # new
+                props:
+                  fields: [search, statusFilter, sourceFilter, sort]
+              - widget: TrackLibraryList    # new
+                props:
+                  rowActions: [preview, analyze]
+                  selectable: true
+```
+
+### Widget reuse guidance for the design system handoff
+
+#### Reuse existing widgets where possible
+
+- `MenuBar`
+- `MacWindow`
+- existing button styling/tokens
+- existing theme / spacing / typography tokens
+
+#### Add new widgets only where the existing system has no equivalent
+
+- `GenerationComposer`
+- `TrackResultsList`
+- `TrackLibraryList`
+- `TrackInspector`
+- `RunSummaryBar`
+- `LibraryToolbar`
+- simple layout primitives if needed (`LayoutRow`, `LayoutColumn`)
+
+#### Important handoff note
+
+The designer should treat `TrackResultsList` and `TrackLibraryList` as siblings with a shared row language. The current run is not a totally different control system; it is a focused subset of the broader library.
+
+### Existing widget inventory available today
+
+This section is meant as a direct handoff aid for the UX designer. It lists the React widgets that already exist in the repository and the props they accept today, so the designer can prefer reuse over unnecessary invention.
+
+#### 1. `MacWindow`
+
+Source: `jingle-extractor-ui/src/components/MacWindow/MacWindow.tsx`
+
+```ts
+{
+  title: string;
+  children: ReactNode;
+  style?: React.CSSProperties;
+  bodyStyle?: React.CSSProperties;
+}
+```
+
+Use for: framed panels, tool windows, inspectors, lists, transport boxes.
+
+#### 2. `MenuBar`
+
+Source: `jingle-extractor-ui/src/components/MenuBar/MenuBar.tsx`
+
+```ts
+{
+  track: Track;
+}
+```
+
+Use for: top application chrome. Today it is track-oriented, so the studio screen will likely need either a small extension or a studio-specific wrapper around it.
+
+#### 3. `PresetPanel`
+
+Source: `jingle-extractor-ui/src/components/PresetPanel/PresetPanel.tsx`
+
+```ts
+{
+  presets: PresetName[];
+  activePreset: PresetName | null;
+  onSelect: (name: PresetName) => void;
+}
+```
+
+Use for: preset picking in the mining screen. Not directly needed on the studio screen, but part of the existing mining workbench.
+
+#### 4. `ConfigEditor`
+
+Source: `jingle-extractor-ui/src/components/ConfigEditor/ConfigEditor.tsx`
+
+```ts
+{
+  config: AnalysisConfig;
+  onChange: (config: AnalysisConfig) => void;
+  onRun: () => void;
+  onReset: () => void;
+  isLoading?: boolean;
+  style?: CSSProperties;
+}
+```
+
+Use for: mining configuration editing. It already includes explicit strategy buttons for `rhythmic` and `lyric_aligned`.
+
+#### 5. `TransportBar`
+
+Source: `jingle-extractor-ui/src/components/TransportBar/TransportBar.tsx`
+
+```ts
+{
+  playhead: number;
+  duration: number;
+  stem: StemType;
+  onStemChange: (stem: StemType) => void;
+  onPlay: () => void;
+  onPause: () => void;
+  onSeekBack: () => void;
+  onSeekForward: () => void;
+  isPlaying?: boolean;
+}
+```
+
+Use for: full-track playback controls in the mining screen. Parts of its visual language may also inform simple track preview controls on the studio screen.
+
+#### 6. `Timeline`
+
+Source: `jingle-extractor-ui/src/components/Timeline/Timeline.tsx`
+
+```ts
+{
+  data: TimelineData;
+  candidates: Candidate[];
+  vocals: VocalSegment[];
+  selectedId: number | null;
+  playhead: number;
+  onSelect: (id: number) => void;
+  onCandidateUpdate: (id: number, edge: 'start' | 'end', time: number) => void;
+  onPlayheadChange: (time: number) => void;
+}
+```
+
+Use for: mining timeline only. Not recommended for the main studio screen.
+
+#### 7. `CandidateList`
+
+Source: `jingle-extractor-ui/src/components/CandidateList/CandidateList.tsx`
+
+```ts
+{
+  candidates: Array<Candidate & { edited?: boolean }>;
+  selectedId: number | null;
+  previewingId?: number | null;
+  onSelect: (id: number) => void;
+  onPreview: (id: number) => void;
+}
+```
+
+Use for: mined jingle list. Its dense row style is a useful reference for future track-result rows.
+
+#### 8. `CandidateDetail`
+
+Source: `jingle-extractor-ui/src/components/CandidateDetail/CandidateDetail.tsx`
+
+```ts
+{
+  candidate: Candidate & { edited?: boolean };
+  stem: StemType;
+  isPreviewing?: boolean;
+  onPreview: () => void;
+  onExport: () => void;
+  onResetEdit: () => void;
+}
+```
+
+Use for: mining detail panel. Its overall inspector composition is a strong precedent for a future `TrackInspector` widget.
+
+#### 9. `ScoreBar`
+
+Source: `jingle-extractor-ui/src/components/ScoreBar/ScoreBar.tsx`
+
+```ts
+{
+  label: string;
+  value: number;
+  className?: string;
+}
+```
+
+Use for: quality metrics. Could be reused for generation/run quality indicators later if scoring concepts are added.
+
+#### 10. `DebugPanel`
+
+Source: `jingle-extractor-ui/src/components/DebugPanel/DebugPanel.tsx`
+
+```ts
+{
+  candidates: Array<Candidate & { edited?: boolean }>;
+  vocals: VocalSegment[];
+  selectedCandidateId: number | null;
+  activePreset: PresetName | null;
+  config: AnalysisConfig;
+  onSelectCandidate?: (id: number) => void;
+}
+```
+
+Use for: mining/debug workflows only.
+
+#### 11. `JingleExtractor`
+
+Source: `jingle-extractor-ui/src/components/JingleExtractor/JingleExtractor.tsx`
+
+```ts
+{
+  trackId?: string;
+}
+```
+
+Use for: the existing mining screen container. This should remain the main entry point for the post-selection extraction workflow.
+
+### Existing widget summary table
+
+| Widget | Exists now | Best reuse target | Notes |
+|---|---|---|---|
+| `MacWindow` | yes | studio + mining | strongest chrome primitive |
+| `MenuBar` | yes | studio + mining | likely needs a studio-aware variant or wrapper |
+| `PresetPanel` | yes | mining | no need on studio screen |
+| `ConfigEditor` | yes | mining | no need on studio screen |
+| `TransportBar` | yes | mining | preview controls may borrow its visual language |
+| `Timeline` | yes | mining | too detailed for studio screen |
+| `CandidateList` | yes | mining | row density useful as a pattern |
+| `CandidateDetail` | yes | mining | inspector pattern useful for `TrackInspector` |
+| `ScoreBar` | yes | mining / possible future analytics | simple reusable meter |
+| `DebugPanel` | yes | mining | internal/debug oriented |
+| `JingleExtractor` | yes | mining screen container | preserve rather than rewrite |
 
 ---
 
@@ -555,38 +817,37 @@ This minimizes risk and preserves the validated extraction work already complete
 
 ```text
 App
-└── StudioShell
-    ├── StudioHeader
-    ├── RunSidebar
-    ├── GenerateWorkspace
-    │   ├── GenerationComposer
-    │   ├── GenerationQueuePanel
-    │   └── GeneratedTrackGrid
-    ├── LibraryWorkspace
-    │   ├── TrackLibraryList
-    │   ├── CompareTray
-    │   └── TrackInspector
-    └── ExtractWorkspace
-        ├── TrackContextBar
-        └── JingleExtractor   (existing component)
+├── StudioScreen
+│   ├── StudioHeader
+│   ├── GenerationComposer
+│   ├── RunResultsPanel
+│   │   ├── RunSummaryBar
+│   │   └── TrackResultsList
+│   ├── LibraryPanel
+│   │   ├── LibraryToolbar
+│   │   └── TrackLibraryList
+│   └── TrackInspector
+└── MiningScreen
+    ├── MiningContextBar
+    └── JingleExtractor   (existing component)
 ```
 
 ### Recommended Redux / UI state additions
 
-The current `analysisSlice` only stores extractor-specific state (`jingle-extractor-ui/src/features/analysis/analysisSlice.ts:9-28`). That is too narrow for a generation-driven app shell.
+The current `analysisSlice` only stores extractor-specific state (`jingle-extractor-ui/src/features/analysis/analysisSlice.ts:9-28`). That is too narrow for a generation-driven studio screen.
 
-Add a new top-level workspace slice, for example `studioSlice`, with state such as:
+Add a new top-level slice, for example `studioSlice`, with state such as:
 
 ```ts
 interface StudioState {
-  activeView: 'generate' | 'library' | 'extract';
+  activeScreen: 'studio' | 'mining';
   selectedTrackId: string | null;
   selectedRunId: string | null;
-  compareTrackIds: string[]; // max 2 in v1
+  previewTrackId: string | null;
   libraryFilters: {
-    origin: 'all' | 'generated' | 'imported';
-    decision: 'all' | 'pending' | 'keep' | 'reject';
-    analyzed: 'all' | 'yes' | 'no';
+    source: 'all' | 'generated' | 'imported';
+    status: 'all' | 'pending' | 'generated' | 'analyzed' | 'failed';
+    sort: 'newest' | 'oldest' | 'name';
     search: string;
   };
 }
@@ -600,7 +861,6 @@ Extend `jingle-extractor-ui/src/api/jingleApi.ts` with endpoints like:
 - `listGenerationRuns`
 - `getGenerationRun`
 - `listTrackCatalog`
-- `updateTrackDecision`
 - `analyzeTrack`
 
 Keep the existing extraction endpoints intact.
@@ -610,15 +870,15 @@ Keep the existing extraction endpoints intact.
 Add files such as:
 
 ```text
-jingle-extractor-ui/src/components/StudioShell/*
+jingle-extractor-ui/src/components/StudioScreen/*
 jingle-extractor-ui/src/components/GenerationComposer/*
-jingle-extractor-ui/src/components/TrackGrid/*
+jingle-extractor-ui/src/components/RunResultsPanel/*
+jingle-extractor-ui/src/components/TrackLibraryList/*
 jingle-extractor-ui/src/components/TrackInspector/*
-jingle-extractor-ui/src/components/CompareTray/*
 jingle-extractor-ui/src/features/studio/studioSlice.ts
 ```
 
-Do not overload `JingleExtractor.tsx` with generation concerns. Keep it focused on extraction.
+Do not overload `JingleExtractor.tsx` with generation concerns. Keep it focused on mining/extraction.
 
 ---
 
@@ -883,19 +1143,19 @@ frontend navigates to Extract view and polls analysis status
 existing JingleExtractor UI becomes available for that selected track
 ```
 
-### Flow C: compare two tracks quickly
+### Flow C: return from mining to the studio screen
 
 ```text
-User selects two generated tracks in Library
+User finishes listening to mined candidates
       │
       ▼
-Compare tray opens
+clicks Back to Studio
       │
       ▼
-play A / play B / note differences
+studio screen restores selected track + current filters
       │
       ▼
-keep one, reject one, or analyze both
+user can generate another run or choose another library track
 ```
 
 ---
@@ -951,27 +1211,34 @@ async def run_generation_batch(run_id: str, request: CreateGenerationRequest) ->
 ### Frontend: generate view orchestration
 
 ```ts
-function GenerateWorkspace() {
+function StudioScreen() {
   const [createGeneration] = useCreateGenerationMutation();
   const selectedRunId = useAppSelector((s) => s.studio.selectedRunId);
   const { data: run } = useGetGenerationRunQuery(selectedRunId, { skip: !selectedRunId });
+  const { data: library } = useListTrackCatalogQuery();
 
   async function handleSubmit(form: GenerationFormState) {
     const accepted = await createGeneration(form).unwrap();
     dispatch(setSelectedRunId(accepted.generation_id));
   }
 
-  const tracks = run?.tracks ?? [];
-  return <GeneratedTrackGrid tracks={tracks} />;
+  return (
+    <StudioLayout
+      composer={<GenerationComposer onSubmit={handleSubmit} />}
+      runResults={<TrackResultsList tracks={run?.tracks ?? []} />}
+      library={<TrackLibraryList tracks={library ?? []} />}
+      inspector={<TrackInspector />}
+    />
+  );
 }
 ```
 
 ### Frontend: open selected track in extractor
 
 ```ts
-function handleOpenInExtractor(trackId: string) {
+function handleOpenInMining(trackId: string) {
   dispatch(setSelectedTrackId(trackId));
-  dispatch(setActiveView('extract'));
+  dispatch(setActiveScreen('mining'));
 }
 ```
 

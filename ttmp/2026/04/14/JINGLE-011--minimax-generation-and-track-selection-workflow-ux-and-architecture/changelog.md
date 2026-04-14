@@ -24,3 +24,13 @@ Validated the ticket with `docmgr doctor`, added the missing vocabulary entries 
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/ttmp/2026/04/14/JINGLE-011--minimax-generation-and-track-selection-workflow-ux-and-architecture/changelog.md — Recorded delivery and validation state
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/ttmp/vocabulary.yaml — Added `minimax` and `ux` topic slugs for ticket hygiene
 
+
+## 2026-04-14
+
+Simplified the proposed UX from a multi-view studio shell to one main Studio screen plus the existing Mining screen, added a concise YAML widget DSL, and documented the full list of existing React widgets with their props for design-system handoff.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/ttmp/2026/04/14/JINGLE-011--minimax-generation-and-track-selection-workflow-ux-and-architecture/design-doc/01-minimax-generation-and-track-selection-ux-architecture-and-implementation-guide.md — Updated IA
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/ttmp/2026/04/14/JINGLE-011--minimax-generation-and-track-selection-workflow-ux-and-architecture/reference/01-investigation-diary.md — Recorded the simplification pass and widget-inventory handoff work
+
