@@ -1,0 +1,85 @@
+/**
+ * JingleExtractor.css — Layout styles for the root JingleExtractor widget.
+ *
+ * Uses CSS Grid for the overall layout:
+ *   [ menu bar ]
+ *   [ sidebar | main panel ]
+ *            [ transport ]
+ *            [ timeline ]
+ *            [ candidates | detail ]
+ *
+ * Sidebar: 290px fixed width
+ * Main panel: flexible
+ * All gaps: 8px
+ */
+
+[data-widget='jingle-extractor'] {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 100vh;
+  background: var(--je-color-bg, #c0c0c0);
+  color: var(--je-color-text, #000);
+  font-family: var(--je-font-family, 'Geneva', monospace);
+  overflow: hidden;
+}
+
+[data-widget='jingle-extractor'] [data-part='root'] {
+  display: contents;
+}
+
+/* Main layout */
+[data-widget='jingle-extractor'] [data-part='main-layout'] {
+  flex: 1;
+  display: flex;
+  gap: var(--je-space-4, 8px);
+  padding: var(--je-space-4, 8px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Sidebar */
+[data-widget='jingle-extractor'] [data-part='sidebar'] {
+  width: var(--je-sidebar-width, 290px);
+  min-width: var(--je-sidebar-width, 290px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--je-space-4, 8px);
+}
+
+/* Main panel */
+[data-widget='jingle-extractor'] [data-part='main-panel'] {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--je-space-4, 8px);
+  min-width: 0;
+}
+
+/* Bottom panel (candidates + detail) */
+[data-widget='jingle-extractor'] [data-part='bottom-panel'] {
+  flex: 1;
+  display: flex;
+  gap: var(--je-space-4, 8px);
+  min-height: 0;
+}
+
+/* Candidate list fills remaining width */
+[data-widget='jingle-extractor'] [data-part='candidate-list'] {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+/* Detail panel fixed width */
+[data-widget='jingle-extractor'] [data-part='candidate-detail'] {
+  width: var(--je-detail-width, 280px);
+  min-width: var(--je-detail-width, 280px);
+  flex-shrink: 0;
+}
+
+/* Window fills flex child */
+[data-widget='jingle-extractor'] [data-part='sidebar'] [data-part='window'] {
+  flex: 1;
+  min-height: 0;
+}

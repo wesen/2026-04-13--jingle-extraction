@@ -26,6 +26,7 @@ export const PARTS = {
   trackInfo: 'track-info',
   trackBadge: 'track-badge',
   sidebar: 'sidebar',
+  mainLayout: 'main-layout',
   mainPanel: 'main-panel',
   bottomPanel: 'bottom-panel',
 
