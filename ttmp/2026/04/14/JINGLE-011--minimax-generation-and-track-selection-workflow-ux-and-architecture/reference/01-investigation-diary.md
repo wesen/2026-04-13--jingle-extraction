@@ -36,7 +36,7 @@ RelatedFiles:
       Note: Investigated creator-oriented output framing for UX guidance
 ExternalSources: []
 Summary: Chronological research diary for the MiniMax generation and track selection design ticket.
-LastUpdated: 2026-04-14T23:55:00-04:00
+LastUpdated: 2026-04-15T00:12:00-04:00
 WhatFor: Capture the investigation process, evidence collection, and delivery steps for JINGLE-011.
 WhenToUse: Use when reviewing how the design was assembled or continuing the research/implementation stream later.
 ---
@@ -721,4 +721,97 @@ Results:
 - Use `GenerationComposerContainer` inside a future `StudioScreenContainer` so the full studio flow is store-driven.
 - Add focused interaction tests for composer validation and reset behavior.
 - Continue replacing legacy list-like widgets with `DataList` using the same compatibility migration pattern.
+
+## Step 6: Add store-connected Studio container and extract another primitive widget
+
+I continued with the next integration slice and also extracted another primitive where it was clearly paying off.
+
+Execution followed the latest direction: keep moving forward, extract primitives when useful, and always include Storybook coverage.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, continue. Also extract primitive widgets if you think it's appropriate, and always do storybook stories"
+
+**Assistant interpretation:** Continue implementation beyond composer, add a connected Studio container, and extract additional reusable primitive components where duplication justifies it, with Storybook stories for each new primitive/container.
+
+### Commits in this step
+- `cd5f9d5` — `feat(ui): extract StatusBadge primitive and unify studio status mapping`
+- `ab7f165` — `feat(studio): add store-connected StudioScreenContainer and selectors`
+
+### What I did
+
+#### A) Extracted `StatusBadge` primitive (+ stories)
+- Added:
+  - `jingle-extractor-ui/src/components/StatusBadge/StatusBadge.tsx`
+  - `jingle-extractor-ui/src/components/StatusBadge/StatusBadge.stories.tsx`
+  - `jingle-extractor-ui/src/components/StatusBadge/index.ts`
+- Replaced repeated inline status badge spans in:
+  - `TrackResultsList.tsx`
+  - `TrackLibraryList.tsx`
+  - `TrackInspector.tsx`
+- Added shared studio status derivation/filter utility:
+  - `jingle-extractor-ui/src/features/studio/status.ts`
+  - `getTrackStatus(track)`
+  - `matchesLibraryStatusFilter(track, filter)`
+- Updated stories to reuse the same filter matcher as runtime code:
+  - `TrackLibraryList.stories.tsx`
+  - `StudioScreen.stories.tsx`
+
+Why this primitive was appropriate:
+- status rendering logic and status-to-color mapping were duplicated in multiple Studio widgets
+- extracted primitive + shared status util reduces drift risk and keeps labels/colors/filtering coherent
+
+#### B) Added a connected Studio container (+ stories)
+- Added selector layer:
+  - `jingle-extractor-ui/src/features/studio/selectors.ts`
+  - draft/selection/filters selectors
+  - derived filtered/sorted library selector
+- Added connected container:
+  - `jingle-extractor-ui/src/components/StudioScreen/StudioScreenContainer.tsx`
+  - binds `StudioScreen` props to `studioSlice`
+  - dispatches selection/preview/filter updates
+  - updates selected run id from current run
+- Added store-backed Storybook coverage:
+  - `jingle-extractor-ui/src/components/StudioScreen/StudioScreenContainer.stories.tsx`
+  - stories: default + filtered/previewing
+- Exported container in:
+  - `jingle-extractor-ui/src/components/StudioScreen/index.ts`
+
+### Validation
+
+```bash
+cd /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui
+npm run build
+npm run lint
+npx vitest run
+npm run build-storybook
+```
+
+Results:
+- build ✅
+- lint ✅ warnings only (same pre-existing Storybook redundant-name warnings)
+- tests ✅ (`5` files, `8` tests)
+- storybook build ✅
+
+Storybook visual checks captured:
+- `jingleextractor-statusbadge--full-set`
+- `jingleextractor-studio-studioscreencontainer--default`
+- `jingleextractor-studio-studioscreencontainer--filtered-and-previewing`
+
+### What worked
+- `StatusBadge` extraction removed repeated status rendering and immediately simplified three Studio widgets.
+- Shared status matcher made story filtering behavior consistent with runtime component filtering.
+- `StudioScreenContainer` proves the slice wiring is now practical for full-screen store-driven interaction.
+
+### What was tricky
+- New Storybook stories using custom `render` needed explicit `args` to satisfy strict `StoryObj` typing for required props.
+- A Playwright capture for one new story initially caught loading state only; re-capture after settle produced valid output.
+
+### What should be done next
+- Compose `GenerationComposerContainer` directly into `StudioScreenContainer` (currently composition is still at `StudioScreen` prop layer).
+- Add interaction tests for container behavior:
+  - selecting row updates inspector
+  - preview toggle behavior
+  - library filter/search/sort updates visible tracks
+- Start RTK Query wiring for real run/library payloads once container behavior is locked.
 
