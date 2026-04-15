@@ -1,6 +1,8 @@
 import type { GenerationRunSummary, TrackLibraryItem } from '../../api/types';
 import { DataList, type ColumnDef, type DataListAction } from '../DataList/DataList';
 import { PARTS } from '../JingleExtractor/parts';
+import { StatusBadge } from '../StatusBadge';
+import { getTrackStatus } from '../../features/studio/status';
 import '../shared/index.css';
 import './TrackResultsList.css';
 
@@ -28,16 +30,6 @@ function fmtDuration(duration: number | null) {
   return `${mins}:${(duration % 60).toFixed(1).padStart(4, '0')}`;
 }
 
-function getStatus(item: TrackLibraryItem) {
-  if (item.analysis_status && item.analysis_status !== 'not_started') return item.analysis_status;
-  return item.generation_status ?? 'pending';
-}
-
-function statusLabel(item: TrackLibraryItem) {
-  const status = getStatus(item);
-  if (status === 'complete') return 'analyzed';
-  return status;
-}
 
 export function TrackResultsList({
   run,
@@ -130,11 +122,7 @@ export function TrackResultsList({
                 </span>
               );
             case 'status':
-              return (
-                <span data-part={PARTS.statusBadge} data-status={getStatus(item) === 'complete' ? 'complete' : getStatus(item)}>
-                  {statusLabel(item)}
-                </span>
-              );
+              return <StatusBadge status={getTrackStatus(item)} />;
             default:
               return null;
           }

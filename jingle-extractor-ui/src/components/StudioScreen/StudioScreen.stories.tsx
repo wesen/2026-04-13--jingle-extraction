@@ -13,6 +13,7 @@ import {
   libraryTracksFixture,
   studioComposerFixture,
 } from '../../mocks/fixtures/studio';
+import { matchesLibraryStatusFilter } from '../../features/studio/status';
 import { withWidgetRoot } from '../storybook/widgetStoryDecorators';
 import { StudioScreen } from './StudioScreen';
 
@@ -70,14 +71,7 @@ function ControlledStudio() {
     const filtered = libraryTracksFixture.filter((track) => {
       if (sourceFilter !== 'all' && track.source_type !== sourceFilter) return false;
       if (search && !track.display_name.toLowerCase().includes(search.toLowerCase())) return false;
-      if (statusFilter !== 'all') {
-        const derived = track.analysis_status === 'complete'
-          ? 'analyzed'
-          : track.analysis_status && track.analysis_status !== 'not_started'
-            ? track.analysis_status
-            : track.generation_status ?? 'pending';
-        if (derived !== statusFilter) return false;
-      }
+      if (!matchesLibraryStatusFilter(track, statusFilter)) return false;
       return true;
     });
     return sortTracks(filtered, sort);

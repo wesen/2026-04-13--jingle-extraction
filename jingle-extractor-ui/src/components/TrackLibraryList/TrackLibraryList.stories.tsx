@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo, useState } from 'react';
 import type { LibrarySort, LibrarySourceFilter, LibraryStatusFilter, TrackLibraryItem } from '../../api/types';
 import { libraryTracksFixture } from '../../mocks/fixtures/studio';
+import { matchesLibraryStatusFilter } from '../../features/studio/status';
 import { withWidgetWindow } from '../storybook/widgetStoryDecorators';
 import { TrackLibraryList } from './TrackLibraryList';
 
@@ -49,14 +50,7 @@ function ControlledLibrary() {
   const tracks = useMemo(() => {
     const filtered = libraryTracksFixture.filter((track) => {
       if (sourceFilter !== 'all' && track.source_type !== sourceFilter) return false;
-      if (statusFilter !== 'all') {
-        const derived = track.analysis_status === 'complete'
-          ? 'analyzed'
-          : track.analysis_status && track.analysis_status !== 'not_started'
-            ? track.analysis_status
-            : track.generation_status ?? 'pending';
-        if (derived !== statusFilter) return false;
-      }
+      if (!matchesLibraryStatusFilter(track, statusFilter)) return false;
       if (search && !track.display_name.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });

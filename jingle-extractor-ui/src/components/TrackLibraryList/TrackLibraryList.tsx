@@ -7,6 +7,8 @@ import type {
 import { DataList, type ColumnDef, type DataListAction } from '../DataList/DataList';
 import { PARTS } from '../JingleExtractor/parts';
 import { SegmentedControl } from '../SegmentedControl';
+import { StatusBadge } from '../StatusBadge';
+import { getTrackStatus } from '../../features/studio/status';
 import '../shared/index.css';
 import './TrackLibraryList.css';
 
@@ -41,11 +43,6 @@ function fmtDuration(duration: number | null) {
   return `${mins}:${(duration % 60).toFixed(1).padStart(4, '0')}`;
 }
 
-function derivedStatus(item: TrackLibraryItem) {
-  if (item.analysis_status === 'complete') return 'analyzed';
-  if (item.analysis_status && item.analysis_status !== 'not_started') return item.analysis_status;
-  return item.generation_status ?? 'pending';
-}
 
 export function TrackLibraryList({
   tracks,
@@ -185,14 +182,8 @@ export function TrackLibraryList({
                   {item.source_type === 'generated' ? 'GEN' : 'IMP'}
                 </span>
               );
-            case 'status': {
-              const status = derivedStatus(item);
-              return (
-                <span data-part={PARTS.statusBadge} data-status={status === 'analyzed' ? 'complete' : status}>
-                  {status}
-                </span>
-              );
-            }
+            case 'status':
+              return <StatusBadge status={getTrackStatus(item)} />;
             case 'duration':
               return <span style={{ opacity: 0.75 }}>{fmtDuration(item.duration)}</span>;
             default:

@@ -1,5 +1,7 @@
 import type { GenerationRunSummary, TrackLibraryItem } from '../../api/types';
 import { PARTS } from '../JingleExtractor/parts';
+import { StatusBadge } from '../StatusBadge';
+import { getTrackStatus } from '../../features/studio/status';
 import '../shared/index.css';
 import './TrackInspector.css';
 
@@ -18,11 +20,6 @@ function fmtDuration(duration: number | null) {
   return `${mins}:${(duration % 60).toFixed(1).padStart(4, '0')}`;
 }
 
-function derivedStatus(track: TrackLibraryItem) {
-  if (track.analysis_status === 'complete') return 'analyzed';
-  if (track.analysis_status && track.analysis_status !== 'not_started') return track.analysis_status;
-  return track.generation_status ?? 'pending';
-}
 
 export function TrackInspector({
   track,
@@ -43,7 +40,7 @@ export function TrackInspector({
     );
   }
 
-  const status = derivedStatus(track);
+  const status = getTrackStatus(track);
   const canOpenInMining = track.analysis_status === 'complete';
 
   return (
@@ -51,9 +48,7 @@ export function TrackInspector({
       <div data-part={PARTS.panelHeader}>
         <div data-part={PARTS.trackInspectorSummary}>
           <strong>{track.display_name}</strong>
-          <span data-part={PARTS.statusBadge} data-status={status === 'analyzed' ? 'complete' : status}>
-            {status}
-          </span>
+          <StatusBadge status={status} />
         </div>
       </div>
 
