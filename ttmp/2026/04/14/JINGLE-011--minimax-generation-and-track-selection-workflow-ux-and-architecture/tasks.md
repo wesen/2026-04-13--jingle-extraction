@@ -32,6 +32,8 @@
 - [x] Extract `StatusBadge` primitive and add Storybook states
 - [x] Compose `GenerationComposerContainer` into `StudioScreenContainer`
 - [x] Make `GenerationComposer` responsive in narrow layouts and add narrow-width stories
+- [x] Add manual candidate actions (add at playhead / delete selected) in the mining workflow
+- [x] Render timeline waveform by selected stem (orig/inst/vox) with Storybook coverage
 
 ### Interaction tests
 
@@ -60,6 +62,9 @@
 - [x] Add `GET /api/generations/{generation_id}`
 - [x] Add a real track-library/catalog endpoint for generated and imported tracks
 - [x] Add a track-centric analyze endpoint (`track_id`, not server path)
+- [x] Add manual candidate endpoints (`POST /api/tracks/{track_id}/candidates/manual`, `DELETE /api/tracks/{track_id}/candidates/{candidate_id}`)
+- [x] Improve lyric-aligned candidate mining by splitting long lyric segments into phrase windows
+- [x] Expose per-stem timeline waveforms (orig/inst/vox)
 - [x] Register the new routes in the FastAPI app
 
 ### Backend validation

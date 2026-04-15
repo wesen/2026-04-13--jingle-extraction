@@ -48,7 +48,7 @@ RelatedFiles:
       Note: Investigated creator-oriented output framing for UX guidance
 ExternalSources: []
 Summary: Chronological research diary for the MiniMax generation and track selection design ticket.
-LastUpdated: 2026-04-15T01:43:00-04:00
+LastUpdated: 2026-04-15T02:16:00-04:00
 WhatFor: Capture the investigation process, evidence collection, and delivery steps for JINGLE-011.
 WhenToUse: Use when reviewing how the design was assembled or continuing the research/implementation stream later.
 ---
@@ -1018,6 +1018,88 @@ I executed the live smoke sequence requested after wiring the runtime screen, an
 ### What should be done next
 - Commit the backend migration-ordering fix (currently uncommitted in this step).
 - Run one UI click-through smoke with backend running (Studio generate/select/analyze/open-in-mining/export) to complement API-level verification.
+
+## Step 10: Improve lyric-aligned candidate yield and add manual candidate + multi-stem timeline features
+
+This step implemented the next requested feature set:
+1) improve lyric-aligned candidate generation for long lyric passages,
+2) add manual candidate add/delete actions,
+3) show timeline waveform for original/instrumental/vocal stems (not only instrumental).
+
+### Prompt Context
+
+**User prompt (verbatim):** "2.  also, additional features:
+- add manual candidates / delete candidates
+- show the original / instrumental / vocal timeline waveform, currently we only ever see the instrumental version."
+
+**Assistant interpretation:** Implement the second proposed lyric-mode improvement (splitting long lyric segments), then add manual candidate CRUD interactions and stem-specific waveform rendering end-to-end.
+
+### Commits in this step
+- `04fb5b1` — `feat(backend): split long lyric segments and add manual candidate APIs`
+- `268dbd0` — `feat(ui): support manual candidate edit actions and stem-specific waveforms`
+
+### What I changed
+
+#### Backend: lyric-aligned splitting + manual candidate API + timeline waveforms
+- Updated lyric-aligned miner (`app/services/candidate_mining.py`):
+  - split long vocal segments into phrase chunks using punctuation + max phrase duration
+  - keep candidate windows constrained by config min/max duration
+  - preserve source metadata for traceability
+- Added manual candidate endpoints (`app/routes/tracks.py`):
+  - `POST /api/tracks/{track_id}/candidates/manual`
+  - `DELETE /api/tracks/{track_id}/candidates/{candidate_id}`
+- Added DB helpers (`app/database.py`):
+  - next candidate id allocation
+  - single-candidate lookup/delete
+  - rank/best recomputation after edits
+- Extended timeline persistence for per-stem waveform envelopes:
+  - schema/migration additions: `orig_rms_json`, `inst_rms_json`, `vox_rms_json`
+  - pipeline now computes/stores stem RMS envelopes
+  - analysis route returns these waveforms
+- Added/updated backend tests (`tests/test_endpoints.py`):
+  - lyric long-segment splitting yields multiple candidates
+  - manual add/delete candidate flow
+
+#### Frontend: manual controls + stem-specific timeline rendering
+- Added API mutations (`src/api/jingleApi.ts`):
+  - `addManualCandidate`
+  - `deleteCandidate`
+- Added UI controls in mining screen (`JingleExtractor.tsx`):
+  - `+ Add @ playhead`
+  - `Delete selected`
+- Updated `Timeline` to accept `stem` prop and render corresponding waveform from `TimelineData.waveforms` with fallback to `rms`.
+- Updated timeline stories/tests:
+  - new story variants for original and vocal waveform views
+  - tests adapted for new `stem` prop
+
+### Validation
+
+```bash
+cd jingle-extractor-backend
+python3 -m pytest -q tests
+
+cd ../jingle-extractor-ui
+npm run build
+npm run lint
+npx vitest run
+npm run build-storybook
+```
+
+Results:
+- backend tests ✅ (`30 passed`)
+- ui build ✅
+- ui lint ✅ warnings only (pre-existing storybook redundant-name warnings)
+- ui tests ✅ (`6 files, 10 tests`)
+- storybook build ✅
+
+### What worked
+- Long lyric passages now produce multiple lyric-aligned windows when enough word-level timing exists.
+- Manual candidate authoring/deletion is now available in the mining UI and persisted in backend candidate storage.
+- Waveform visualization follows stem selection (orig/inst/vox) instead of always using instrumental RMS.
+
+### What should be done next
+- Add a focused frontend interaction test for manual add/delete candidate actions.
+- Optionally expose a tiny in-UI duration control for manual add (currently uses playhead + bounded default length).
 
 
 ## Step 4: Implement the backend generation/catalog layer for the Studio workflow
