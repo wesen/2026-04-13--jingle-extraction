@@ -1,4 +1,6 @@
-"""Tests for GET /api/presets, GET /api/tracks, and analysis status responses."""
+"""Tests for presets, tracks, generation runs, and analysis status responses."""
+
+from pathlib import Path
 
 
 def test_get_presets(client):
@@ -85,6 +87,129 @@ def test_get_track_audio_returns_404_for_missing_stem(client, test_db):
 
     resp = client.get(f"/api/tracks/{track_id}/audio/orig")
     assert resp.status_code == 404
+
+
+def test_create_generation_run_and_detail(client, test_db, monkeypatch, tmp_path):
+    def fake_minimax_generate(*, out_path: Path, **_kwargs):
+        out_path.write_bytes(b"fake generated mp3")
+        return out_path
+
+    monkeypatch.setattr(
+        "app.services.generation_service.call_minimax_generate",
+        fake_minimax_generate,
+    )
+
+    resp = client.post(
+        "/api/generations",
+        json={
+            "prompt": "Death/thrash metal stings with a chantable hook",
+            "lyrics": "[Hook] spinning power / burning fast",
+            "model": "music-2.6",
+            "count": 2,
+            "mode": "vocal",
+            "namingPrefix": "thrash_hook",
+        },
+    )
+
+    assert resp.status_code == 202
+    accepted = resp.json()
+    run_id = accepted["generation_id"]
+    assert accepted["status"] == "queued"
+    assert accepted["count_requested"] == 2
+
+    detail = client.get(f"/api/generations/{run_id}")
+    assert detail.status_code == 200
+    data = detail.json()
+    assert data["id"] == run_id
+    assert data["status"] == "complete"
+    assert data["countRequested"] == 2
+    assert data["countCompleted"] == 2
+    assert len(data["tracks"]) == 2
+    assert all(track["source_type"] == "generated" for track in data["tracks"])
+    assert all(track["generation_status"] == "generated" for track in data["tracks"])
+    assert all(track["analysis_status"] == "not_started" for track in data["tracks"])
+
+    runs = client.get("/api/generations")
+    assert runs.status_code == 200
+    listed = runs.json()
+    assert listed[0]["id"] == run_id
+
+
+def test_library_tracks_returns_generated_and_imported_rows(client, test_db, tmp_path):
+    imported_path = tmp_path / "imports" / "upload_take_03.mp3"
+    imported_path.parent.mkdir(parents=True, exist_ok=True)
+    imported_path.write_bytes(b"imported")
+    test_db.create_track(
+        "upload_take_03",
+        str(imported_path),
+        status="complete",
+        display_name="upload_take_03",
+        source_type="imported",
+    )
+
+    generated_path = tmp_path / "tracks" / "thrash_hook_01" / "orig.mp3"
+    generated_path.parent.mkdir(parents=True, exist_ok=True)
+    generated_path.write_bytes(b"generated")
+    test_db.create_track(
+        "thrash_hook_01",
+        str(generated_path),
+        status="not_started",
+        display_name="thrash_hook_01",
+        source_type="generated",
+        generation_status="generated",
+        generation_run_id="gen_001",
+        variant_index=1,
+        prompt_snapshot="thrash prompt",
+        lyrics_snapshot="[Hook] Yow",
+        minimax_model="music-2.6",
+        instrumental_requested=False,
+    )
+
+    resp = client.get("/api/library/tracks?source=generated")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["id"] == "thrash_hook_01"
+    assert data[0]["source_type"] == "generated"
+    assert data[0]["generation_status"] == "generated"
+    assert data[0]["analysis_status"] == "not_started"
+
+
+def test_track_centric_analyze_uses_track_id(client, test_db, monkeypatch, tmp_path, default_config):
+    audio_path = tmp_path / "tracks" / "generated_track" / "orig.mp3"
+    audio_path.parent.mkdir(parents=True, exist_ok=True)
+    audio_path.write_bytes(b"audio")
+
+    test_db.create_track(
+        "generated_track",
+        str(audio_path),
+        status="not_started",
+        display_name="generated_track",
+        source_type="generated",
+        generation_status="generated",
+    )
+
+    calls = []
+
+    async def fake_run_pipeline(track_id, audio_file, config):
+        calls.append((track_id, audio_file, config))
+
+    monkeypatch.setattr("app.routes.tracks._get_run_pipeline", lambda: fake_run_pipeline)
+
+    resp = client.post(
+        "/api/library/tracks/generated_track/analyze",
+        json={"config": default_config},
+    )
+
+    assert resp.status_code == 202
+    data = resp.json()
+    assert data["track_id"] == "generated_track"
+    assert data["status"] == "uploaded"
+    assert calls[0][0] == "generated_track"
+    assert calls[0][1] == str(audio_path)
+
+    track = test_db.get_track("generated_track")
+    assert track["analysis_status"] == "uploaded"
 
 
 def test_mine_returns_lyric_aligned_candidates_without_rerunning_pipeline(client, test_db):

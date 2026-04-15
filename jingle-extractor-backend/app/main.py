@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import CORS_ORIGINS, DATA_DIR
 from app.database import Database
-from app.routes import analyze, analysis, export, mine, presets, tracks
+from app.routes import analyze, analysis, export, generations, mine, presets, tracks
 
 
 @asynccontextmanager
@@ -38,6 +38,7 @@ app.add_middleware(
 
 app.include_router(analyze.router)
 app.include_router(analysis.router)
+app.include_router(generations.router)
 app.include_router(mine.router)
 app.include_router(export.router)
 app.include_router(tracks.router)

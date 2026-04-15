@@ -29,7 +29,12 @@ async def analyze(request: AnalyzeRequest, background_tasks: BackgroundTasks):
 
     db = Database()
     existing = db.get_track(track_id)
-    if existing and existing["status"] == AnalysisStatus.COMPLETE.value:
+    existing_status = (
+        existing.get("analysis_status") or existing.get("status")
+        if existing
+        else None
+    )
+    if existing and existing_status == AnalysisStatus.COMPLETE.value:
         return AnalyzeAcceptedResponse(
             track_id=track_id, status=AnalysisStatus.COMPLETE
         )
@@ -38,6 +43,12 @@ async def analyze(request: AnalyzeRequest, background_tasks: BackgroundTasks):
     from app.pipeline import run_pipeline
 
     db.create_track(track_id, str(audio_path), status=AnalysisStatus.UPLOADED.value)
+    db.update_track_metadata(
+        track_id,
+        display_name=track_id,
+        source_type="imported",
+        generation_status=None,
+    )
 
     background_tasks.add_task(run_pipeline, track_id, str(audio_path), request.config)
 

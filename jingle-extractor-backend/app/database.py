@@ -5,17 +5,32 @@ Uses WAL mode for concurrent reads, sync connections for simplicity.
 
 from __future__ import annotations
 
-import json
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from app.config import db_path
 
 SQL_SCHEMA = """
+CREATE TABLE IF NOT EXISTS generation_runs (
+    id              TEXT PRIMARY KEY,
+    name            TEXT NOT NULL,
+    prompt          TEXT NOT NULL,
+    lyrics          TEXT,
+    model           TEXT NOT NULL,
+    mode            TEXT NOT NULL,
+    count_requested INTEGER NOT NULL,
+    count_completed INTEGER NOT NULL DEFAULT 0,
+    status          TEXT NOT NULL,
+    error_message   TEXT,
+    created_at      TEXT DEFAULT (datetime('now')),
+    updated_at      TEXT DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS tracks (
     id              TEXT PRIMARY KEY,
+    display_name    TEXT,
     original_path   TEXT NOT NULL,
     inst_path       TEXT,
     vox_path        TEXT,
@@ -26,6 +41,16 @@ CREATE TABLE IF NOT EXISTS tracks (
     sr              INTEGER DEFAULT 44100,
     dr_db           REAL DEFAULT 0.0,
     status          TEXT DEFAULT 'uploaded',
+    analysis_status TEXT DEFAULT 'uploaded',
+    generation_status TEXT,
+    source_type     TEXT DEFAULT 'imported',
+    generation_run_id TEXT,
+    variant_index   INTEGER,
+    prompt_snapshot TEXT,
+    lyrics_snapshot TEXT,
+    minimax_model   TEXT,
+    instrumental_requested INTEGER,
+    decision        TEXT DEFAULT 'pending',
     error_message   TEXT,
     created_at      TEXT DEFAULT (datetime('now')),
     updated_at      TEXT DEFAULT (datetime('now'))
@@ -79,6 +104,9 @@ CREATE TABLE IF NOT EXISTS candidates (
 CREATE INDEX IF NOT EXISTS idx_candidates_track ON candidates(track_id);
 CREATE INDEX IF NOT EXISTS idx_vocal_segments_track ON vocal_segments(track_id);
 CREATE INDEX IF NOT EXISTS idx_tracks_status ON tracks(status);
+CREATE INDEX IF NOT EXISTS idx_tracks_analysis_status ON tracks(analysis_status);
+CREATE INDEX IF NOT EXISTS idx_tracks_generation_run ON tracks(generation_run_id);
+CREATE INDEX IF NOT EXISTS idx_generation_runs_status ON generation_runs(status);
 """
 
 
@@ -106,7 +134,34 @@ class Database:
     def create_tables(self) -> None:
         with self._conn() as conn:
             conn.executescript(SQL_SCHEMA)
+            self._ensure_track_columns(conn)
             self._ensure_candidate_columns(conn)
+
+    def _ensure_track_columns(self, conn: sqlite3.Connection) -> None:
+        existing = {row["name"] for row in conn.execute("PRAGMA table_info(tracks)").fetchall()}
+        additions = {
+            "display_name": "TEXT",
+            "analysis_status": "TEXT DEFAULT 'uploaded'",
+            "generation_status": "TEXT",
+            "source_type": "TEXT DEFAULT 'imported'",
+            "generation_run_id": "TEXT",
+            "variant_index": "INTEGER",
+            "prompt_snapshot": "TEXT",
+            "lyrics_snapshot": "TEXT",
+            "minimax_model": "TEXT",
+            "instrumental_requested": "INTEGER",
+            "decision": "TEXT DEFAULT 'pending'",
+        }
+        for column, col_type in additions.items():
+            if column not in existing:
+                conn.execute(f"ALTER TABLE tracks ADD COLUMN {column} {col_type}")
+
+        if "analysis_status" in existing:
+            conn.execute(
+                "UPDATE tracks SET analysis_status = COALESCE(analysis_status, status, 'uploaded')"
+            )
+        else:
+            conn.execute("UPDATE tracks SET analysis_status = status")
 
     def _ensure_candidate_columns(self, conn: sqlite3.Connection) -> None:
         existing = {
@@ -125,30 +180,143 @@ class Database:
             if column not in existing:
                 conn.execute(f"ALTER TABLE candidates ADD COLUMN {column} {col_type}")
 
-    # ── Tracks ─────────────────────────────────────────────────────────────
+    # ── Generation runs ───────────────────────────────────────────────────
 
-    def create_track(self, track_id: str, original_path: str, status: str = "uploaded") -> None:
+    def create_generation_run(
+        self,
+        run_id: str,
+        *,
+        name: str,
+        prompt: str,
+        lyrics: Optional[str],
+        model: str,
+        mode: str,
+        count_requested: int,
+        status: str,
+        error_message: Optional[str] = None,
+    ) -> None:
         with self._conn() as conn:
             conn.execute(
-                "INSERT OR IGNORE INTO tracks (id, original_path, status) VALUES (?, ?, ?)",
-                (track_id, original_path, status),
+                """
+                INSERT INTO generation_runs
+                    (id, name, prompt, lyrics, model, mode, count_requested, count_completed, status, error_message)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+                """,
+                (run_id, name, prompt, lyrics, model, mode, count_requested, status, error_message),
             )
 
-    def get_track(self, track_id: str) -> Optional[dict]:
+    def get_generation_run(self, run_id: str) -> Optional[dict[str, Any]]:
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM generation_runs WHERE id = ?", (run_id,)
+            ).fetchone()
+            return dict(row) if row else None
+
+    def list_generation_runs(self) -> list[dict[str, Any]]:
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT * FROM generation_runs ORDER BY created_at DESC"
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def update_generation_run(self, run_id: str, **kwargs: Any) -> None:
+        if not kwargs:
+            return
+        sets = ", ".join(f"{k} = ?" for k in kwargs)
+        vals = list(kwargs.values()) + [run_id]
+        with self._conn() as conn:
+            conn.execute(
+                f"UPDATE generation_runs SET {sets}, updated_at = datetime('now') WHERE id = ?",
+                vals,
+            )
+
+    def increment_generation_run_completed(self, run_id: str) -> None:
+        with self._conn() as conn:
+            conn.execute(
+                "UPDATE generation_runs SET count_completed = count_completed + 1, updated_at = datetime('now') WHERE id = ?",
+                (run_id,),
+            )
+
+    # ── Tracks ─────────────────────────────────────────────────────────────
+
+    def create_track(
+        self,
+        track_id: str,
+        original_path: str,
+        status: str = "uploaded",
+        *,
+        display_name: Optional[str] = None,
+        source_type: str = "imported",
+        generation_status: Optional[str] = None,
+        generation_run_id: Optional[str] = None,
+        variant_index: Optional[int] = None,
+        prompt_snapshot: Optional[str] = None,
+        lyrics_snapshot: Optional[str] = None,
+        minimax_model: Optional[str] = None,
+        instrumental_requested: Optional[bool] = None,
+        decision: str = "pending",
+    ) -> None:
+        with self._conn() as conn:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO tracks
+                    (id, display_name, original_path, status, analysis_status, source_type, generation_status,
+                     generation_run_id, variant_index, prompt_snapshot, lyrics_snapshot, minimax_model,
+                     instrumental_requested, decision)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    track_id,
+                    display_name or track_id,
+                    original_path,
+                    status,
+                    status,
+                    source_type,
+                    generation_status,
+                    generation_run_id,
+                    variant_index,
+                    prompt_snapshot,
+                    lyrics_snapshot,
+                    minimax_model,
+                    int(instrumental_requested) if instrumental_requested is not None else None,
+                    decision,
+                ),
+            )
+
+    def get_track(self, track_id: str) -> Optional[dict[str, Any]]:
         with self._conn() as conn:
             row = conn.execute("SELECT * FROM tracks WHERE id = ?", (track_id,)).fetchone()
             return dict(row) if row else None
 
-    def list_tracks(self) -> list[dict]:
+    def list_tracks(self) -> list[dict[str, Any]]:
         with self._conn() as conn:
             rows = conn.execute("SELECT * FROM tracks ORDER BY created_at DESC").fetchall()
+            return [dict(r) for r in rows]
+
+    def list_tracks_for_generation_run(self, run_id: str) -> list[dict[str, Any]]:
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT * FROM tracks WHERE generation_run_id = ? ORDER BY variant_index ASC, created_at ASC",
+                (run_id,),
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def list_library_tracks(self) -> list[dict[str, Any]]:
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT * FROM tracks ORDER BY created_at DESC"
+            ).fetchall()
             return [dict(r) for r in rows]
 
     def update_status(self, track_id: str, status: str, error_message: Optional[str] = None) -> None:
         with self._conn() as conn:
             conn.execute(
-                "UPDATE tracks SET status = ?, error_message = ?, updated_at = datetime('now') WHERE id = ?",
-                (status, error_message, track_id),
+                """
+                UPDATE tracks
+                SET status = ?, analysis_status = ?, error_message = ?, updated_at = datetime('now')
+                WHERE id = ?
+                """,
+                (status, status, error_message, track_id),
             )
 
     def update_stems(self, track_id: str, inst_path: str, vox_path: str) -> None:
@@ -158,7 +326,9 @@ class Database:
                 (inst_path, vox_path, track_id),
             )
 
-    def update_track_metadata(self, track_id: str, **kwargs) -> None:
+    def update_track_metadata(self, track_id: str, **kwargs: Any) -> None:
+        if not kwargs:
+            return
         sets = ", ".join(f"{k} = ?" for k in kwargs)
         vals = list(kwargs.values()) + [track_id]
         with self._conn() as conn:
@@ -179,7 +349,7 @@ class Database:
                 (track_id, beats_json, rms_json, onsets_json, hop_length),
             )
 
-    def get_timeline(self, track_id: str) -> Optional[dict]:
+    def get_timeline(self, track_id: str) -> Optional[dict[str, Any]]:
         with self._conn() as conn:
             row = conn.execute(
                 "SELECT * FROM timelines WHERE track_id = ?", (track_id,)
@@ -198,7 +368,7 @@ class Database:
                 (track_id, segment_idx, start, end, text, confidence, words_json),
             )
 
-    def get_vocal_segments(self, track_id: str) -> list[dict]:
+    def get_vocal_segments(self, track_id: str) -> list[dict[str, Any]]:
         with self._conn() as conn:
             rows = conn.execute(
                 "SELECT * FROM vocal_segments WHERE track_id = ? ORDER BY segment_idx",
@@ -247,7 +417,7 @@ class Database:
                 ),
             )
 
-    def get_candidates(self, track_id: str) -> list[dict]:
+    def get_candidates(self, track_id: str) -> list[dict[str, Any]]:
         with self._conn() as conn:
             rows = conn.execute(
                 "SELECT * FROM candidates WHERE track_id = ? ORDER BY rank",

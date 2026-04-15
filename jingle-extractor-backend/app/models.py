@@ -8,7 +8,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ─── Enums ──────────────────────────────────────────────────────────────────
@@ -37,6 +37,7 @@ class StemType(str, Enum):
 
 
 class AnalysisStatus(str, Enum):
+    NOT_STARTED = "not_started"
     UPLOADED = "uploaded"
     SEPARATING = "separating_stems"
     TRANSCRIBING = "transcribing"
@@ -44,6 +45,37 @@ class AnalysisStatus(str, Enum):
     MINING = "mining_candidates"
     COMPLETE = "complete"
     FAILED = "failed"
+
+
+class GenerationMode(str, Enum):
+    VOCAL = "vocal"
+    INSTRUMENTAL = "instrumental"
+
+
+class GenerationRunStatus(str, Enum):
+    QUEUED = "queued"
+    GENERATING = "generating"
+    COMPLETE = "complete"
+    PARTIAL_FAILED = "partial_failed"
+    FAILED = "failed"
+
+
+class TrackSourceType(str, Enum):
+    GENERATED = "generated"
+    IMPORTED = "imported"
+
+
+class TrackGenerationStatus(str, Enum):
+    QUEUED = "queued"
+    GENERATING = "generating"
+    GENERATED = "generated"
+    FAILED = "failed"
+
+
+class TrackDecision(str, Enum):
+    PENDING = "pending"
+    KEEP = "keep"
+    REJECT = "reject"
 
 
 # ─── Track ──────────────────────────────────────────────────────────────────
@@ -57,6 +89,22 @@ class Track(BaseModel):
     lang_conf: float
     sr: int
     dr_db: float
+
+
+class TrackLibraryItem(BaseModel):
+    id: str
+    display_name: str
+    duration: Optional[float] = None
+    source_type: TrackSourceType
+    generation_run_id: Optional[str] = None
+    variant_index: Optional[int] = None
+    generation_status: Optional[TrackGenerationStatus] = None
+    analysis_status: Optional[AnalysisStatus] = None
+    prompt_snapshot: Optional[str] = None
+    lyrics_snapshot: Optional[str] = None
+    instrumental_requested: Optional[bool] = None
+    minimax_model: Optional[str] = None
+    decision: Optional[TrackDecision] = None
 
 
 # ─── Timeline ───────────────────────────────────────────────────────────────
@@ -157,6 +205,46 @@ class AnalysisConfig(BaseModel):
             }
         }
     )
+
+
+# ─── Studio / Generation ───────────────────────────────────────────────────
+
+
+class CreateGenerationRequest(BaseModel):
+    prompt: str
+    lyrics: str = ""
+    model: str = "music-2.6"
+    count: int = Field(ge=1, le=8)
+    mode: GenerationMode = GenerationMode.VOCAL
+    namingPrefix: str = Field(min_length=1, max_length=80)
+
+
+class GenerationRunSummary(BaseModel):
+    id: str
+    name: str
+    prompt: str
+    lyrics: Optional[str] = None
+    model: str
+    mode: GenerationMode
+    countRequested: int
+    countCompleted: int
+    status: GenerationRunStatus
+    createdAt: Optional[str] = None
+
+
+class GenerationAcceptedResponse(BaseModel):
+    generation_id: str
+    status: GenerationRunStatus
+    count_requested: int
+
+
+class GenerationRunDetailResponse(GenerationRunSummary):
+    error_message: Optional[str] = None
+    tracks: list[TrackLibraryItem]
+
+
+class AnalyzeTrackRequest(BaseModel):
+    config: AnalysisConfig
 
 
 # ─── Request Models ─────────────────────────────────────────────────────────
