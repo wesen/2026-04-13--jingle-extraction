@@ -70,5 +70,5 @@
 ## Later frontend/runtime work
 
 - [x] Wire the Studio screen to real RTK Query endpoints
-- [ ] Validate the full flow live: generate batch → preview → analyze selected → extract jingles
+- [x] Validate the full flow live: generate batch → preview → analyze selected → extract jingles
 

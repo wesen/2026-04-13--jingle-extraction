@@ -48,7 +48,7 @@ RelatedFiles:
       Note: Investigated creator-oriented output framing for UX guidance
 ExternalSources: []
 Summary: Chronological research diary for the MiniMax generation and track selection design ticket.
-LastUpdated: 2026-04-15T01:29:00-04:00
+LastUpdated: 2026-04-15T01:43:00-04:00
 WhatFor: Capture the investigation process, evidence collection, and delivery steps for JINGLE-011.
 WhenToUse: Use when reviewing how the design was assembled or continuing the research/implementation stream later.
 ---
@@ -961,6 +961,63 @@ Results:
 - Add RTK Query error/loading surface polish in Studio (inline per-panel states rather than one generic runtime error strip).
 - Add one focused test for preview toggle semantics in Studio runtime/container wiring.
 - Run manual backend+frontend dev-server end-to-end verification with live generation and analyze actions.
+
+## Step 9: Run live smoke flow against backend and fix startup migration issue
+
+I executed the live smoke sequence requested after wiring the runtime screen, and hit a real startup blocker on existing local DBs. I fixed that blocker first, then completed an end-to-end API smoke run (generation → library → analyze-by-track-id → mine → export).
+
+### Prompt Context
+
+**User prompt (verbatim):** "go ahead"
+
+**Assistant interpretation:** Perform the real runtime smoke verification now, not just static builds/tests.
+
+### Commits in this step
+- `313632a` — `fix(ui): use border-box sizing for shared form fields`
+- `fix pending` (current working tree in this step) — backend startup migration ordering fix in `database.py`
+
+### What I did
+- Diagnosed backend health-check hangs and discovered startup failure:
+  - `sqlite3.OperationalError: no such column: analysis_status`
+- Root cause:
+  - index creation on `tracks(analysis_status)` ran before legacy DB migrations added that column.
+- Fixed migration ordering in backend DB bootstrap:
+  - moved index creation into `_ensure_indexes()`
+  - run `_ensure_indexes()` only after `_ensure_track_columns()` / `_ensure_candidate_columns()`
+- Re-ran backend tests:
+  - `python3 -m pytest -q tests` → `28 passed`
+- Started backend and executed live smoke flow via API calls:
+  1. `POST /api/generations` (count=1 instrumental)
+  2. poll `GET /api/generations/{id}` until complete
+  3. `GET /api/library/tracks` confirms generated track appears
+  4. `POST /api/library/tracks/{id}/analyze`
+  5. poll `GET /api/analysis/{id}` until complete
+  6. `POST /api/mine` returns candidate list
+  7. `POST /api/export` returns mp3 bytes (successful clip export)
+
+### Validation highlights
+- Health endpoint responds after migration fix:
+  - `GET /api/health` → `{"status":"ok","version":"1.0.0"}`
+- Generation run progressed to complete with created track row.
+- Track-centric analyze progressed through statuses:
+  - `uploaded → separating_stems → transcribing → analyzing_rhythm → complete`
+- Final analysis response included full payload:
+  - `track`, `timeline`, `vocals`, `candidates`
+- Export response successful:
+  - HTTP 200, non-zero mp3 payload written to `/tmp/smoke-candidate.mp3`
+
+### What worked
+- Runtime Studio backend contract is now proven with real requests.
+- The new track-id analysis route is functional for generated tracks.
+- Mining+export pipeline remains compatible with generated track IDs.
+
+### What was tricky
+- Existing DB schema upgrade path failed at startup due index-before-migration ordering.
+- Live analysis is compute-heavy (Demucs/WhisperX), so status polling is necessary and expected.
+
+### What should be done next
+- Commit the backend migration-ordering fix (currently uncommitted in this step).
+- Run one UI click-through smoke with backend running (Studio generate/select/analyze/open-in-mining/export) to complement API-level verification.
 
 
 ## Step 4: Implement the backend generation/catalog layer for the Studio workflow
