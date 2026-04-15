@@ -12,8 +12,20 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: jingle-extractor-backend/app/database.py
+      Note: Step 4 generation-run persistence and track catalog extensions
     - Path: jingle-extractor-backend/app/main.py
       Note: Investigated active FastAPI routers and confirmed no generation router exists yet
+    - Path: jingle-extractor-backend/app/models.py
+      Note: Step 4 generation and library API models
+    - Path: jingle-extractor-backend/app/routes/generations.py
+      Note: Step 4 generation run endpoints
+    - Path: jingle-extractor-backend/app/routes/tracks.py
+      Note: Step 4 library endpoint and analyze-by-track-id flow
+    - Path: jingle-extractor-backend/app/services/generation_service.py
+      Note: Step 4 MiniMax-backed generation service with lazy imports
+    - Path: jingle-extractor-backend/tests/test_endpoints.py
+      Note: Step 4 backend endpoint coverage for Studio workflows
     - Path: jingle-extractor-ui/src/App.tsx
       Note: Investigated current one-view app shell
     - Path: jingle-extractor-ui/src/api/jingleApi.ts
@@ -40,6 +52,7 @@ LastUpdated: 2026-04-15T00:12:00-04:00
 WhatFor: Capture the investigation process, evidence collection, and delivery steps for JINGLE-011.
 WhenToUse: Use when reviewing how the design was assembled or continuing the research/implementation stream later.
 ---
+
 
 
 
@@ -815,3 +828,143 @@ Storybook visual checks captured:
   - library filter/search/sort updates visible tracks
 - Start RTK Query wiring for real run/library payloads once container behavior is locked.
 
+
+## Step 4: Implement the backend generation/catalog layer for the Studio workflow
+
+Once the Storybook-first Studio UI slice existed, the next missing piece was the actual backend model the Studio screen expects. The codebase already knew how to analyze a track and mine jingles, but it still had no durable concept of a generation run, no real track catalog for generated assets, and no clean way to analyze a chosen track by ID. This step filled in that backend gap.
+
+I implemented this as a Studio-runtime backend slice rather than trying to fully “productize everything” at once. The focus was deliberate: add generation-run persistence, expose generation routes, expose a real library endpoint, and add a track-centric analyze route that the Studio UI can eventually call.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, Create tasks if you don't already have them, and then implement them task by task, committing at appropriate intervals, keeping a detailed diary"
+
+**Assistant interpretation:** Expand the ticket into concrete backend tasks if needed, then execute those backend tasks in sequence with focused commits and diary updates.
+
+**Inferred user intent:** Move from design/storybook scaffolding into real backend implementation while preserving project hygiene and continuation-friendly documentation.
+
+**Commit (code):** `64c8399` — `feat(backend): add generation runs and studio track catalog`
+
+### What I did
+- Expanded the ticket task list so the backend work was explicit and phase-structured
+- Extended backend persistence in `jingle-extractor-backend/app/database.py` with:
+  - `generation_runs` table
+  - richer track metadata for Studio/library workflows
+  - helper methods for generation runs and catalog queries
+- Extended backend models in `jingle-extractor-backend/app/models.py` with:
+  - generation request/response models
+  - library track item model
+  - generation/status/source enums
+- Added `jingle-extractor-backend/app/services/generation_service.py`
+  - creates generation-run records
+  - wraps MiniMax generation sequentially
+  - writes generated audio into backend-owned track directories
+  - creates track rows with generated-track metadata
+- Added `jingle-extractor-backend/app/routes/generations.py`
+  - `POST /api/generations`
+  - `GET /api/generations`
+  - `GET /api/generations/{generation_id}`
+- Extended `jingle-extractor-backend/app/routes/tracks.py` with:
+  - `GET /api/library/tracks`
+  - `POST /api/library/tracks/{track_id}/analyze`
+- Updated `jingle-extractor-backend/app/routes/analyze.py` to respect `analysis_status` and to annotate imported-track metadata more explicitly
+- Updated `jingle-extractor-backend/app/main.py` to register the new generation router
+- Added endpoint coverage in `jingle-extractor-backend/tests/test_endpoints.py` for:
+  - generation creation/detail listing
+  - library listing
+  - track-centric analyze by ID
+
+### Why
+- The Studio screen needs real backend objects behind “current run”, “library”, and “analyze selected track”
+- Reusing the old path-based `/api/analyze` contract directly would keep the product model wrong
+- Adding generation-run persistence now gives us a durable place to hang prompt text, progress, and output tracks
+
+### What worked
+- The generation/catalog backend slice fit cleanly beside the existing analysis pipeline rather than requiring a rewrite
+- Using backend-owned `track_dir(track_id) / orig.mp3` storage means generated tracks already land in the same filesystem shape expected by later transport/export logic
+- The new endpoint tests passed after the implementation stabilized:
+
+```bash
+cd jingle-extractor-backend && python3 -m pytest -q tests
+```
+
+Result:
+
+```text
+28 passed
+```
+
+### What didn't work
+- The first test run failed immediately because importing the new generation service at app startup tried to import `jingle_extractor.py`, which in turn imported `librosa`, which is not available in the lightweight backend test environment:
+
+```text
+ModuleNotFoundError: No module named 'jingle_extractor'
+```
+
+and then, after fixing the path:
+
+```text
+ModuleNotFoundError: No module named 'librosa'
+```
+
+- I fixed that by making the generation service lazy-load the CLI MiniMax function only at call time instead of importing `jingle_extractor` at module import time.
+- One endpoint test also initially failed because monkeypatching `app.pipeline.run_pipeline` forced an import of `app.pipeline`, which again pulled in `jingle_extractor.py` and `librosa`. I fixed that by introducing a small `_get_run_pipeline()` indirection in `app/routes/tracks.py` so the test could patch the route-level helper instead.
+
+### What I learned
+- The backend still benefits heavily from the same “lazy import heavy ML/runtime dependencies” rule that earlier tickets established for analysis and export code
+- The Studio backend can be added incrementally without changing the core mining pipeline, as long as the storage and contracts are clean
+- `analysis_status` and `generation_status` need to be treated as separate concepts; Studio workflows are much clearer once those states are disentangled
+
+### What was tricky to build
+- The trickiest design choice was how to extend the existing `tracks` table without breaking the already-working analysis routes. The table originally assumed a single axis of status. The Studio workflow needs at least two: generation progress and analysis progress. I solved this by adding `analysis_status` and `generation_status`-oriented metadata while still preserving compatibility with the older `status`-based code paths.
+- Another sharp edge was the runtime/test boundary. The backend app imports its routes at startup, so any route-level import of heavy pipeline code effectively turns every endpoint test into a dependency smoke test. That is why the lazy import fixes mattered so much.
+
+### What warrants a second pair of eyes
+- The exact semantics of `status` vs. `analysis_status` in persisted rows; the compatibility strategy is pragmatic, but it is worth reviewing for long-term cleanliness
+- The naming and shape of `GenerationAcceptedResponse` versus the richer run summary/detail responses
+- Whether `/api/library/tracks` should eventually absorb more server-side filtering or whether the current light filter layer is enough for the first integrated frontend pass
+
+### What should be done in the future
+- Wire the frontend RTK Query layer to the new backend routes
+- Add connected Studio containers that consume the real generation/library data
+- Decide whether to fully deprecate path-based `/api/analyze` once the Studio workflow is integrated
+- Add live manual validation for end-to-end MiniMax generation in the app runtime, not just mocked endpoint tests
+
+### Code review instructions
+- Review backend persistence and models first:
+  - `jingle-extractor-backend/app/database.py`
+  - `jingle-extractor-backend/app/models.py`
+- Then review the runtime endpoints/services:
+  - `jingle-extractor-backend/app/services/generation_service.py`
+  - `jingle-extractor-backend/app/routes/generations.py`
+  - `jingle-extractor-backend/app/routes/tracks.py`
+  - `jingle-extractor-backend/app/routes/analyze.py`
+  - `jingle-extractor-backend/app/main.py`
+- Finally review the tests:
+  - `jingle-extractor-backend/tests/test_endpoints.py`
+- Validate with:
+
+```bash
+cd /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend
+python3 -m pytest -q tests
+```
+
+### Technical details
+
+Representative failures fixed during the step:
+
+```text
+ModuleNotFoundError: No module named 'jingle_extractor'
+ModuleNotFoundError: No module named 'librosa'
+ImportError: import error in app.pipeline: No module named 'librosa'
+```
+
+Key implementation files touched:
+- `jingle-extractor-backend/app/database.py`
+- `jingle-extractor-backend/app/models.py`
+- `jingle-extractor-backend/app/services/generation_service.py`
+- `jingle-extractor-backend/app/routes/generations.py`
+- `jingle-extractor-backend/app/routes/tracks.py`
+- `jingle-extractor-backend/app/routes/analyze.py`
+- `jingle-extractor-backend/app/main.py`
+- `jingle-extractor-backend/tests/test_endpoints.py`

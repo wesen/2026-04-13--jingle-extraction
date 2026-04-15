@@ -46,3 +46,15 @@ Implemented the Storybook-first Studio UI slice: added studio-domain types and s
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/components/TrackLibraryList/TrackLibraryList.tsx — Created the library list and filter widget
 - /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui/src/features/studio/studioSlice.ts — Dedicated Studio state model for the new one-screen workflow
 
+
+## 2026-04-14
+
+Implemented the backend Studio runtime slice: added generation-run persistence, generation service/routes, a real library endpoint, and track-centric analyze-by-id support, then validated the backend test suite.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/database.py — Added generation_runs and richer track catalog persistence
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/generations.py — Added generation run API endpoints
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/app/routes/tracks.py — Added library endpoint and analyze-by-track-id endpoint
+- /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-backend/tests/test_endpoints.py — Added endpoint coverage for Studio backend workflows
+

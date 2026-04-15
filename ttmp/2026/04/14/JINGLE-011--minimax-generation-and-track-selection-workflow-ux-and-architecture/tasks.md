@@ -35,11 +35,31 @@
 - [x] Validate `npm run lint` for the frontend
 - [x] Validate `npm run build-storybook`
 
-## Later backend/runtime work
+## Backend/runtime implementation plan
 
-- [ ] Add backend generation-run persistence and routes
-- [ ] Add a real track-library/catalog endpoint for generated and imported tracks
-- [ ] Add a track-centric analyze endpoint (`track_id`, not server path)
+### Backend foundation
+
+- [x] Add `generation_runs` persistence and track metadata extensions in the backend database layer
+- [x] Add backend models for generation requests, generation-run summaries/details, and library track items
+- [x] Add database helpers for generation runs and library track queries
+
+### Backend routes and services
+
+- [x] Add a generation service that wraps the existing MiniMax CLI integration and writes generated tracks into backend-owned track directories
+- [x] Add `POST /api/generations`
+- [x] Add `GET /api/generations`
+- [x] Add `GET /api/generations/{generation_id}`
+- [x] Add a real track-library/catalog endpoint for generated and imported tracks
+- [x] Add a track-centric analyze endpoint (`track_id`, not server path)
+- [x] Register the new routes in the FastAPI app
+
+### Backend validation
+
+- [x] Add endpoint tests for generation runs, library listing, and track-centric analyze flow
+- [x] Validate `python3 -m pytest -q tests`
+
+## Later frontend/runtime work
+
 - [ ] Wire the Studio screen to real RTK Query endpoints
 - [ ] Validate the full flow live: generate batch → preview → analyze selected → extract jingles
 

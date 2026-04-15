@@ -16,8 +16,14 @@ RelatedFiles:
       Note: Current track schema and persistence constraints
     - Path: jingle-extractor-backend/app/routes/analyze.py
       Note: Current path-based analyze contract that should become track-centric
+    - Path: jingle-extractor-backend/app/routes/generations.py
+      Note: Now implements the documented generation-run endpoints
     - Path: jingle-extractor-backend/app/routes/tracks.py
-      Note: Current completed-only track listing behavior
+      Note: |-
+        Current completed-only track listing behavior
+        Now implements the documented library endpoint and track-centric analyze flow
+    - Path: jingle-extractor-backend/app/services/generation_service.py
+      Note: Now implements the documented generation service layer
     - Path: jingle-extractor-ui/src/App.tsx
       Note: Current top-level app shell lacks generation/library workflow
     - Path: jingle-extractor-ui/src/components/GenerationComposer/GenerationComposer.tsx
@@ -42,6 +48,7 @@ LastUpdated: 2026-04-14T16:48:09.320663574-04:00
 WhatFor: 'Design the next major product surface: generating multiple tracks with MiniMax, browsing them, comparing them, selecting keepers, and handing chosen tracks into the extraction workbench.'
 WhenToUse: Use when implementing generation APIs, track library/catalog UI, studio-screen workflows, or onboarding engineers to the generation-to-extraction product model.
 ---
+
 
 
 
