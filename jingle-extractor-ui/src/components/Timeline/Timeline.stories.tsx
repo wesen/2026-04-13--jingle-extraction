@@ -5,21 +5,28 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Timeline } from './Timeline';
-import type { Candidate, TimelineData, VocalSegment } from '../../api/types';
+import type { Candidate, StemType, TimelineData, VocalSegment } from '../../api/types';
 
 // Realistic mock data
+const baseRms = Array.from({ length: 480 }, (_, i) => {
+  const t = (i / 480) * 55.59;
+  let base = 0.04;
+  if (t > 5 && t < 15) base = 0.06 + Math.sin(t * 0.5) * 0.02;
+  if (t > 15 && t < 35) base = 0.11 + Math.sin(t * 0.3) * 0.03;
+  if (t > 35 && t < 45) base = 0.18 + Math.sin(t * 0.7) * 0.05;
+  if (t > 45) base = 0.09 + Math.sin(t * 0.4) * 0.03;
+  return Math.max(0.001, base + (Math.random() - 0.5) * 0.03);
+});
+
 const THRASH_TIMELINE: TimelineData = {
   duration: 55.59,
   beats: Array.from({ length: 150 }, (_, i) => 0.348 + i * (60 / 166.7)),
-  rms: Array.from({ length: 480 }, (_, i) => {
-    const t = (i / 480) * 55.59;
-    let base = 0.04;
-    if (t > 5 && t < 15) base = 0.06 + Math.sin(t * 0.5) * 0.02;
-    if (t > 15 && t < 35) base = 0.11 + Math.sin(t * 0.3) * 0.03;
-    if (t > 35 && t < 45) base = 0.18 + Math.sin(t * 0.7) * 0.05;
-    if (t > 45) base = 0.09 + Math.sin(t * 0.4) * 0.03;
-    return Math.max(0.001, base + (Math.random() - 0.5) * 0.03);
-  }),
+  rms: baseRms,
+  waveforms: {
+    inst: baseRms,
+    orig: baseRms.map((v, i) => Math.max(0.001, v * 0.92 + Math.sin(i / 13) * 0.01)),
+    vox: baseRms.map((v, i) => Math.max(0.001, v * 0.55 + (i % 17 === 0 ? 0.03 : 0))),
+  },
 };
 
 const THRASH_CANDIDATES: Candidate[] = [
@@ -52,7 +59,14 @@ export default meta;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Story = StoryObj<any>;
 
-function timelineStory(name: string, candidates: Candidate[], vocals: VocalSegment[], selectedId: number | null, playhead: number): Story {
+function timelineStory(
+  name: string,
+  candidates: Candidate[],
+  vocals: VocalSegment[],
+  selectedId: number | null,
+  playhead: number,
+  stem: StemType = 'inst'
+): Story {
   return {
     name,
     render: () => {
@@ -62,6 +76,7 @@ function timelineStory(name: string, candidates: Candidate[], vocals: VocalSegme
       return (
         <Timeline
           data={THRASH_TIMELINE}
+          stem={stem}
           candidates={cands}
           vocals={vocals}
           selectedId={sel}
@@ -111,4 +126,22 @@ export const NoVocals = timelineStory(
   [],
   1,
   25
+);
+
+export const VocalWaveform = timelineStory(
+  'Vocal waveform view',
+  THRASH_CANDIDATES,
+  THRASH_VOCALS,
+  2,
+  20,
+  'vox'
+);
+
+export const OriginalWaveform = timelineStory(
+  'Original waveform view',
+  THRASH_CANDIDATES,
+  THRASH_VOCALS,
+  2,
+  20,
+  'orig'
 );

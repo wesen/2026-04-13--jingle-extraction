@@ -8,6 +8,7 @@ import type {
   AnalyzeAcceptedResponse,
   Candidate,
   CreateGenerationAcceptedResponse,
+  DeleteCandidateResponse,
   ExportFormat,
   GenerationComposerValue,
   GenerationRunDetailResponse,
@@ -66,6 +67,18 @@ export interface ListLibraryTracksParams {
 export interface AnalyzeTrackRequest {
   trackId: string;
   config: AnalysisConfig;
+}
+
+export interface AddManualCandidateRequest {
+  trackId: string;
+  start: number;
+  end: number;
+  source_text?: string;
+}
+
+export interface DeleteCandidateRequest {
+  trackId: string;
+  candidateId: number;
 }
 
 // ─── API definition ─────────────────────────────────────────────────────────
@@ -210,6 +223,31 @@ export const jingleApi = createApi({
       invalidatesTags: ['Analysis', 'Tracks', 'Library'],
     }),
 
+    /**
+     * POST /api/tracks/:trackId/candidates/manual
+     * Add a manually-defined candidate interval.
+     */
+    addManualCandidate: builder.mutation<Candidate, AddManualCandidateRequest>({
+      query: ({ trackId, ...body }) => ({
+        url: `tracks/${encodeURIComponent(trackId)}/candidates/manual`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Candidates', 'Analysis'],
+    }),
+
+    /**
+     * DELETE /api/tracks/:trackId/candidates/:candidateId
+     * Delete a candidate by id.
+     */
+    deleteCandidate: builder.mutation<DeleteCandidateResponse, DeleteCandidateRequest>({
+      query: ({ trackId, candidateId }) => ({
+        url: `tracks/${encodeURIComponent(trackId)}/candidates/${candidateId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Candidates', 'Analysis'],
+    }),
+
     // ── Catalog ─────────────────────────────────────────────────────────────
 
     /**
@@ -245,6 +283,8 @@ export const {
   useGetGenerationQuery,
   useListLibraryTracksQuery,
   useAnalyzeLibraryTrackMutation,
+  useAddManualCandidateMutation,
+  useDeleteCandidateMutation,
   useListTracksQuery,
   useGetPresetsQuery,
 } = jingleApi;

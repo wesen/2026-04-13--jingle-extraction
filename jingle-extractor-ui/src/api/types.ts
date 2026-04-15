@@ -10,11 +10,18 @@ export interface Track {
   dr_db: number; // dynamic range in dB
 }
 
+export interface StemWaveforms {
+  orig?: number[];
+  inst?: number[];
+  vox?: number[];
+}
+
 export interface TimelineData {
   duration: number; // seconds
   beats: number[]; // timestamps in seconds
-  rms: number[]; // energy values, one per hop
+  rms: number[]; // energy values, one per hop (backwards compatible default)
   onsets?: number[]; // onset timestamps (optional)
+  waveforms?: StemWaveforms;
 }
 
 // ─── Transcription ───────────────────────────────────────────────────────────
@@ -116,6 +123,11 @@ export type AnalysisStatus =
 export interface AnalyzeAcceptedResponse {
   track_id: string;
   status: AnalysisStatus;
+}
+
+export interface DeleteCandidateResponse {
+  ok: boolean;
+  deleted_candidate_id: number;
 }
 
 export interface AnalysisPendingResponse {

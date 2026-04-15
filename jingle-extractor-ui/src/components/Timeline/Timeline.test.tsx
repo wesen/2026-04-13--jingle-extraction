@@ -50,6 +50,7 @@ describe('Timeline', () => {
     const { container } = render(
       <Timeline
         data={timelineData}
+        stem="inst"
         candidates={candidates}
         vocals={vocals}
         selectedId={1}
@@ -77,6 +78,7 @@ describe('Timeline', () => {
     const { container } = render(
       <Timeline
         data={timelineData}
+        stem="inst"
         candidates={candidates}
         vocals={vocals}
         selectedId={null}
@@ -101,6 +103,7 @@ describe('Timeline', () => {
     const { container } = render(
       <Timeline
         data={timelineData}
+        stem="inst"
         candidates={candidates}
         vocals={vocals}
         selectedId={1}

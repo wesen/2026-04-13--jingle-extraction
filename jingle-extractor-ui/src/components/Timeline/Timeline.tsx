@@ -9,8 +9,8 @@
  * - Playhead (vertical line + triangle)
  */
 
-import { useCallback, useRef } from 'react';
-import type { Candidate, TimelineData, VocalSegment } from '../../api/types';
+import { useCallback, useMemo, useRef } from 'react';
+import type { Candidate, StemType, TimelineData, VocalSegment } from '../../api/types';
 import { PARTS } from '../JingleExtractor/parts';
 import { useTimelineDrag } from './useTimelineDrag';
 import './Timeline.css';
@@ -19,6 +19,7 @@ const HANDLE_W = 7; // px
 
 interface TimelineProps {
   data: TimelineData;
+  stem: StemType;
   candidates: Candidate[];
   vocals: VocalSegment[];
   selectedId: number | null;
@@ -324,6 +325,7 @@ function PlayheadLayer({ playhead, svgH, dur, pW, padL }: PlayheadLayerProps) {
 
 export function Timeline({
   data,
+  stem,
   candidates,
   vocals,
   selectedId,
@@ -341,6 +343,10 @@ export function Timeline({
   const pW = W - padL;
   const pH = H - padT - 22;
   const dur = data.duration;
+  const waveformRms = useMemo(() => {
+    const stemRms = data.waveforms?.[stem];
+    return stemRms && stemRms.length > 0 ? stemRms : data.rms;
+  }, [data.rms, data.waveforms, stem]);
 
   const xToT = useCallback(
     (x: number) => Math.max(0, Math.min(dur, (x / pW) * dur)),
@@ -414,7 +420,7 @@ export function Timeline({
         onSelect={onSelect}
         onPointerDown={onPointerDown}
       />
-      <WaveformLayer rms={data.rms} padT={padT} pH={pH} pW={pW} />
+      <WaveformLayer rms={waveformRms} padT={padT} pH={pH} pW={pW} />
       <PlayheadLayer playhead={playhead} svgH={H} dur={dur} pW={pW} padL={padL} />
     </svg>
   );

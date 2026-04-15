@@ -9,8 +9,10 @@
 
 import { useCallback, useEffect, useMemo } from 'react';
 import {
+  useAddManualCandidateMutation,
   useAnalyzeLibraryTrackMutation,
   useAnalyzeMutation,
+  useDeleteCandidateMutation,
   useGetAnalysisQuery,
   useExportClipMutation,
   useMineCandidatesMutation,
@@ -80,6 +82,8 @@ export function JingleExtractor({
   const [runAnalysis, { isLoading: isAnalyzingByFile }] = useAnalyzeMutation();
   const [analyzeTrackById, { isLoading: isAnalyzingByTrackId }] = useAnalyzeLibraryTrackMutation();
   const [mineCandidates, { isLoading: isMining }] = useMineCandidatesMutation();
+  const [addManualCandidate, { isLoading: isAddingManual }] = useAddManualCandidateMutation();
+  const [deleteCandidate, { isLoading: isDeletingCandidate }] = useDeleteCandidateMutation();
   const [exportClip] = useExportClipMutation();
 
   // ── Event handlers ───────────────────────────────────────────────────
@@ -205,6 +209,40 @@ export function JingleExtractor({
   }, [analysisStatus, refetch]);
 
   // ── Handlers that reference derived data ──────────────────────────────
+  const handleAddManualCandidate = useCallback(async () => {
+    if (!timeline) return;
+
+    const clipLength = Math.max(config.min_dur, Math.min(config.max_dur, 2.5));
+    const start = Math.max(0, Math.min(playhead, timeline.duration - 0.35));
+    const end = Math.min(timeline.duration, start + clipLength);
+
+    try {
+      const added = await addManualCandidate({
+        trackId,
+        start,
+        end,
+        source_text: `Manual ${start.toFixed(1)}s → ${end.toFixed(1)}s`,
+      }).unwrap();
+      await refetch();
+      dispatch(setSelectedCandidate(added.id));
+    } catch (e) {
+      console.error('Add manual candidate failed:', e);
+    }
+  }, [addManualCandidate, config.max_dur, config.min_dur, dispatch, playhead, refetch, timeline, trackId]);
+
+  const handleDeleteSelectedCandidate = useCallback(async () => {
+    if (selectedId == null) return;
+
+    try {
+      await deleteCandidate({ trackId, candidateId: selectedId }).unwrap();
+      dispatch(clearCandidateEdit(selectedId));
+      dispatch(setSelectedCandidate(null));
+      await refetch();
+    } catch (e) {
+      console.error('Delete candidate failed:', e);
+    }
+  }, [deleteCandidate, dispatch, refetch, selectedId, trackId]);
+
   const handlePreview = useCallback(
     async (id: number) => {
       const cand = visibleCandidates.find((c) => c.id === id);
@@ -323,6 +361,7 @@ export function JingleExtractor({
             <MacWindow title="Timeline — drag handles ◀ ▶ to resize candidates" style={{ flexShrink: 0 }}>
               <Timeline
                 data={timeline}
+                stem={stem}
                 candidates={visibleCandidates}
                 vocals={vocals}
                 selectedId={selectedId}
@@ -350,13 +389,36 @@ export function JingleExtractor({
                 </div>
               )}
               {!isLoading && !isError && analysisComplete && (
-                <CandidateList
-                  candidates={visibleCandidates}
-                  selectedId={selectedId}
-                  previewingId={previewingCandidateId}
-                  onSelect={handleCandidateSelect}
-                  onPreview={handlePreview}
-                />
+                <>
+                  <div style={{ display: 'flex', gap: 6, padding: '6px 6px 2px' }}>
+                    <button
+                      data-part={PARTS.btnSecondary}
+                      type="button"
+                      onClick={handleAddManualCandidate}
+                      disabled={isAddingManual || !timeline}
+                      title="Add a candidate around the current playhead"
+                    >
+                      + Add @ playhead
+                    </button>
+                    <button
+                      data-part={PARTS.btnDanger}
+                      type="button"
+                      onClick={handleDeleteSelectedCandidate}
+                      disabled={isDeletingCandidate || selectedId == null}
+                      title="Delete currently selected candidate"
+                    >
+                      Delete selected
+                    </button>
+                  </div>
+
+                  <CandidateList
+                    candidates={visibleCandidates}
+                    selectedId={selectedId}
+                    previewingId={previewingCandidateId}
+                    onSelect={handleCandidateSelect}
+                    onPreview={handlePreview}
+                  />
+                </>
               )}
             </MacWindow>
 
