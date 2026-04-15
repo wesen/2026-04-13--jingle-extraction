@@ -48,7 +48,7 @@ RelatedFiles:
       Note: Investigated creator-oriented output framing for UX guidance
 ExternalSources: []
 Summary: Chronological research diary for the MiniMax generation and track selection design ticket.
-LastUpdated: 2026-04-15T01:05:00-04:00
+LastUpdated: 2026-04-15T01:29:00-04:00
 WhatFor: Capture the investigation process, evidence collection, and delivery steps for JINGLE-011.
 WhenToUse: Use when reviewing how the design was assembled or continuing the research/implementation stream later.
 ---
@@ -886,6 +886,81 @@ Results:
 ### What should be done next
 - Add one more interaction test for preview toggle → inspector action-label/state transitions.
 - Start wiring RTK Query endpoints into `StudioScreenContainer` behind fixtures/MSW fallbacks.
+
+## Step 8: Wire Studio runtime UI to backend endpoints and mount it in the app shell
+
+This step connected the Storybook-first Studio UI to real backend data/routes so the flow now works end-to-end at runtime (generation runs, library listing, analyze-by-track-id, and open-in-mining handoff).
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, go ahead"
+
+**Assistant interpretation:** Implement the backend wiring slice now (RTK Query + runtime container + app integration) and verify it builds/tests cleanly.
+
+**Inferred user intent:** Move from “UI scaffold exists” to “UI actually works against backend.”
+
+**Commit (code):** `48b9ec7` — `feat(studio): wire runtime studio flow to backend generation/library APIs`
+
+### What I did
+- Extended frontend API contracts:
+  - added `not_started` to `AnalysisStatus` (matches backend enum)
+  - added generation response/detail interfaces for runtime integration
+- Extended `jingleApi.ts` with Studio endpoints:
+  - `createGeneration` → `POST /api/generations`
+  - `listGenerations` → `GET /api/generations`
+  - `getGeneration` → `GET /api/generations/{id}`
+  - `listLibraryTracks` → `GET /api/library/tracks`
+  - `analyzeLibraryTrack` → `POST /api/library/tracks/{track_id}/analyze`
+- Added `StudioRuntimeScreen.tsx`:
+  - fetches generation runs + selected generation detail
+  - fetches library tracks
+  - polls generation detail while active
+  - triggers generate/analyze actions
+  - previews track audio via `/api/tracks/{id}/audio/orig`
+  - handles `Open in Mining` by setting selected track + switching screen
+- Integrated runtime app shell in `App.tsx`:
+  - added Studio/Mining workspace toggle
+  - renders `StudioRuntimeScreen` for Studio
+  - renders `JingleExtractor` for Mining
+- Updated `JingleExtractor` to support track-id analysis mode:
+  - new prop `useTrackAnalyze`
+  - when enabled, Run Analysis calls `/api/library/tracks/{id}/analyze`
+  - otherwise retains legacy `/api/analyze` path-based behavior
+
+### Why
+- Without this wiring, Studio remained story-only and not operational.
+- Generation runs and library tracks already exist in backend; wiring those routes is the shortest path to a working flow.
+- Track-centric analyze is required for generated/imported library tracks (path-based analyze is not suitable there).
+
+### Validation
+
+```bash
+cd /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui
+npm run build
+npm run lint
+npx vitest run
+npm run build-storybook
+```
+
+Results:
+- build ✅
+- lint ✅ warnings only (pre-existing storybook redundant-name warnings)
+- tests ✅ (`6` files, `10` tests)
+- storybook build ✅
+
+### What worked
+- Runtime Studio screen now has real backend-backed run/library data flow.
+- Open-in-Mining handoff now routes selected track id into the mining screen with track-id analysis support.
+- The app now has a practical screen switch mechanism (Studio/Mining) at runtime.
+
+### What was tricky
+- Backend accepted response field names (`generation_id`, `count_requested`) differ from summary/detail camelCase shapes; endpoint typing had to reflect that split.
+- `JingleExtractor` needed a dual analyze path to preserve legacy behavior while enabling the new library-track flow.
+
+### What should be done next
+- Add RTK Query error/loading surface polish in Studio (inline per-panel states rather than one generic runtime error strip).
+- Add one focused test for preview toggle semantics in Studio runtime/container wiring.
+- Run manual backend+frontend dev-server end-to-end verification with live generation and analyze actions.
 
 
 ## Step 4: Implement the backend generation/catalog layer for the Studio workflow

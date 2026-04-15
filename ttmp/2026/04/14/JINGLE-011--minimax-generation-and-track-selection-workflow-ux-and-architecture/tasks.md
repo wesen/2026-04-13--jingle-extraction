@@ -31,6 +31,7 @@
 - [x] Add `StudioScreenContainer` connected to `studioSlice` with store-backed stories
 - [x] Extract `StatusBadge` primitive and add Storybook states
 - [x] Compose `GenerationComposerContainer` into `StudioScreenContainer`
+- [x] Make `GenerationComposer` responsive in narrow layouts and add narrow-width stories
 
 ### Interaction tests
 
@@ -68,6 +69,6 @@
 
 ## Later frontend/runtime work
 
-- [ ] Wire the Studio screen to real RTK Query endpoints
+- [x] Wire the Studio screen to real RTK Query endpoints
 - [ ] Validate the full flow live: generate batch → preview → analyze selected → extract jingles
 
