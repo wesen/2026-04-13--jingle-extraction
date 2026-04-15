@@ -48,7 +48,7 @@ RelatedFiles:
       Note: Investigated creator-oriented output framing for UX guidance
 ExternalSources: []
 Summary: Chronological research diary for the MiniMax generation and track selection design ticket.
-LastUpdated: 2026-04-15T00:12:00-04:00
+LastUpdated: 2026-04-15T01:05:00-04:00
 WhatFor: Capture the investigation process, evidence collection, and delivery steps for JINGLE-011.
 WhenToUse: Use when reviewing how the design was assembled or continuing the research/implementation stream later.
 ---
@@ -827,6 +827,65 @@ Storybook visual checks captured:
   - preview toggle behavior
   - library filter/search/sort updates visible tracks
 - Start RTK Query wiring for real run/library payloads once container behavior is locked.
+
+## Step 7: Compose the connected composer into StudioScreenContainer and add interaction tests
+
+This step executes the immediate follow-up from Step 6: make the connected studio container own composer state/rendering directly, then lock core behaviors with focused container-level interaction tests.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue"
+
+**Assistant interpretation:** Continue from the just-finished status primitive/container work and execute the next highest-value integration/testing slice.
+
+**Inferred user intent:** Keep shipping in small safe increments with validation and Storybook coverage expectations preserved.
+
+**Commit (code):** `133ba6e` — `feat(studio): compose GenerationComposerContainer into StudioScreenContainer`
+
+### What I did
+- Updated `StudioScreen` to support two composition modes:
+  - existing prop-driven inline composer (for presentational stories and compatibility)
+  - new `composerPanel` slot mode for connected composition
+- Updated `StudioScreenContainer` to render:
+  - `GenerationComposerContainer` directly inside the composer panel slot
+  - rather than manually piping draft props into presentational `GenerationComposer`
+- Added focused interaction tests:
+  - `jingle-extractor-ui/src/components/StudioScreen/StudioScreenContainer.interactions.test.tsx`
+  - verifies selecting track rows updates inspector content/state
+  - verifies library search + status + source filters narrow visible library rows as expected
+
+### Why
+- This removes one layer of container indirection and keeps draft/form behavior in the connected composer where it belongs.
+- Container-level tests give us confidence that the studio slice wiring (selection/filtering) behaves correctly beyond Storybook visuals.
+
+### Validation
+
+```bash
+cd /home/manuel/code/wesen/2026-04-13--jingle-extraction/jingle-extractor-ui
+npx vitest run src/components/StudioScreen/StudioScreenContainer.interactions.test.tsx
+npm run build
+npm run lint
+npx vitest run
+npm run build-storybook
+```
+
+Results:
+- targeted interaction test ✅
+- build ✅
+- lint ✅ warnings only (pre-existing storybook redundant-name warnings)
+- full tests ✅ (`6` files, `10` tests)
+- storybook build ✅
+
+### What worked
+- `composerPanel` slot preserved backward compatibility while enabling cleaner connected composition.
+- New interaction tests passed and now cover core container behavior that was previously only exercised manually in stories.
+
+### What was tricky
+- Testing Library could not reliably infer accessible names from `label` associations in this jsdom setup for the library controls, so the test uses robust role-based and scoped queries to avoid brittle coupling.
+
+### What should be done next
+- Add one more interaction test for preview toggle → inspector action-label/state transitions.
+- Start wiring RTK Query endpoints into `StudioScreenContainer` behind fixtures/MSW fallbacks.
 
 
 ## Step 4: Implement the backend generation/catalog layer for the Studio workflow

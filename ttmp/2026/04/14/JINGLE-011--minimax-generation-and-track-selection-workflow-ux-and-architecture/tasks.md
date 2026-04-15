@@ -28,6 +28,14 @@
 - [x] Build `TrackInspector` using existing panel/button styling primitives with Storybook states
 - [x] Build `StudioScreen` composition component using `MacWindow`, `MenuBar`, and the new studio widgets
 - [x] Add a Storybook integration story for the full `StudioScreen`
+- [x] Add `StudioScreenContainer` connected to `studioSlice` with store-backed stories
+- [x] Extract `StatusBadge` primitive and add Storybook states
+- [x] Compose `GenerationComposerContainer` into `StudioScreenContainer`
+
+### Interaction tests
+
+- [x] Add `StudioScreenContainer` interaction tests for selection and inspector sync
+- [x] Add `StudioScreenContainer` interaction tests for library search/source/status filtering
 
 ### Validation
 
