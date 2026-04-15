@@ -101,12 +101,6 @@ CREATE TABLE IF NOT EXISTS candidates (
     FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_candidates_track ON candidates(track_id);
-CREATE INDEX IF NOT EXISTS idx_vocal_segments_track ON vocal_segments(track_id);
-CREATE INDEX IF NOT EXISTS idx_tracks_status ON tracks(status);
-CREATE INDEX IF NOT EXISTS idx_tracks_analysis_status ON tracks(analysis_status);
-CREATE INDEX IF NOT EXISTS idx_tracks_generation_run ON tracks(generation_run_id);
-CREATE INDEX IF NOT EXISTS idx_generation_runs_status ON generation_runs(status);
 """
 
 
@@ -136,6 +130,7 @@ class Database:
             conn.executescript(SQL_SCHEMA)
             self._ensure_track_columns(conn)
             self._ensure_candidate_columns(conn)
+            self._ensure_indexes(conn)
 
     def _ensure_track_columns(self, conn: sqlite3.Connection) -> None:
         existing = {row["name"] for row in conn.execute("PRAGMA table_info(tracks)").fetchall()}
@@ -179,6 +174,14 @@ class Database:
         for column, col_type in additions.items():
             if column not in existing:
                 conn.execute(f"ALTER TABLE candidates ADD COLUMN {column} {col_type}")
+
+    def _ensure_indexes(self, conn: sqlite3.Connection) -> None:
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_candidates_track ON candidates(track_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_vocal_segments_track ON vocal_segments(track_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_status ON tracks(status)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_analysis_status ON tracks(analysis_status)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_generation_run ON tracks(generation_run_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_generation_runs_status ON generation_runs(status)")
 
     # ── Generation runs ───────────────────────────────────────────────────
 
