@@ -62,6 +62,9 @@ CREATE TABLE IF NOT EXISTS timelines (
     rms_json        TEXT NOT NULL,
     onsets_json     TEXT,
     hop_length      INTEGER DEFAULT 512,
+    orig_rms_json   TEXT,
+    inst_rms_json   TEXT,
+    vox_rms_json    TEXT,
     FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
 );
 
@@ -130,6 +133,7 @@ class Database:
             conn.executescript(SQL_SCHEMA)
             self._ensure_track_columns(conn)
             self._ensure_candidate_columns(conn)
+            self._ensure_timeline_columns(conn)
             self._ensure_indexes(conn)
 
     def _ensure_track_columns(self, conn: sqlite3.Connection) -> None:
@@ -174,6 +178,20 @@ class Database:
         for column, col_type in additions.items():
             if column not in existing:
                 conn.execute(f"ALTER TABLE candidates ADD COLUMN {column} {col_type}")
+
+    def _ensure_timeline_columns(self, conn: sqlite3.Connection) -> None:
+        existing = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(timelines)").fetchall()
+        }
+        additions = {
+            "orig_rms_json": "TEXT",
+            "inst_rms_json": "TEXT",
+            "vox_rms_json": "TEXT",
+        }
+        for column, col_type in additions.items():
+            if column not in existing:
+                conn.execute(f"ALTER TABLE timelines ADD COLUMN {column} {col_type}")
 
     def _ensure_indexes(self, conn: sqlite3.Connection) -> None:
         conn.execute("CREATE INDEX IF NOT EXISTS idx_candidates_track ON candidates(track_id)")
@@ -343,13 +361,25 @@ class Database:
     # ── Timelines ──────────────────────────────────────────────────────────
 
     def upsert_timeline(
-        self, track_id: str, beats_json: str, rms_json: str,
-        onsets_json: Optional[str], hop_length: int = 512,
+        self,
+        track_id: str,
+        beats_json: str,
+        rms_json: str,
+        onsets_json: Optional[str],
+        hop_length: int = 512,
+        *,
+        orig_rms_json: Optional[str] = None,
+        inst_rms_json: Optional[str] = None,
+        vox_rms_json: Optional[str] = None,
     ) -> None:
         with self._conn() as conn:
             conn.execute(
-                "INSERT OR REPLACE INTO timelines (track_id, beats_json, rms_json, onsets_json, hop_length) VALUES (?, ?, ?, ?, ?)",
-                (track_id, beats_json, rms_json, onsets_json, hop_length),
+                """
+                INSERT OR REPLACE INTO timelines
+                    (track_id, beats_json, rms_json, onsets_json, hop_length, orig_rms_json, inst_rms_json, vox_rms_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (track_id, beats_json, rms_json, onsets_json, hop_length, orig_rms_json, inst_rms_json, vox_rms_json),
             )
 
     def get_timeline(self, track_id: str) -> Optional[dict[str, Any]]:
@@ -427,6 +457,47 @@ class Database:
                 (track_id,),
             ).fetchall()
             return [dict(r) for r in rows]
+
+    def get_candidate(self, track_id: str, candidate_idx: int) -> Optional[dict[str, Any]]:
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM candidates WHERE track_id = ? AND candidate_idx = ?",
+                (track_id, candidate_idx),
+            ).fetchone()
+            return dict(row) if row else None
+
+    def next_candidate_idx(self, track_id: str) -> int:
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT COALESCE(MAX(candidate_idx), 0) + 1 AS next_idx FROM candidates WHERE track_id = ?",
+                (track_id,),
+            ).fetchone()
+            return int(row["next_idx"] if row else 1)
+
+    def delete_candidate(self, track_id: str, candidate_idx: int) -> None:
+        with self._conn() as conn:
+            conn.execute(
+                "DELETE FROM candidates WHERE track_id = ? AND candidate_idx = ?",
+                (track_id, candidate_idx),
+            )
+
+    def recompute_candidate_ranks(self, track_id: str) -> None:
+        with self._conn() as conn:
+            rows = conn.execute(
+                """
+                SELECT candidate_idx
+                FROM candidates
+                WHERE track_id = ?
+                ORDER BY score DESC, start_time ASC, candidate_idx ASC
+                """,
+                (track_id,),
+            ).fetchall()
+
+            for rank, row in enumerate(rows, start=1):
+                conn.execute(
+                    "UPDATE candidates SET rank = ?, is_best = ? WHERE track_id = ? AND candidate_idx = ?",
+                    (rank, 1 if rank == 1 else 0, track_id, int(row["candidate_idx"])),
+                )
 
     def delete_candidates(self, track_id: str) -> None:
         with self._conn() as conn:

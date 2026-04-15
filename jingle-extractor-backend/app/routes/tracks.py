@@ -1,21 +1,33 @@
 """Track catalog, library, audio, and analyze-by-id routes."""
 
+import json
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from fastapi.responses import FileResponse
 
 from app.config import stem_path
 from app.database import Database
 from app.models import (
+    AddManualCandidateRequest,
     AnalysisStatus,
     AnalyzeAcceptedResponse,
     AnalyzeTrackRequest,
+    Candidate,
+    DeleteCandidateResponse,
     StemType,
     Track,
     TrackLibraryItem,
     TrackSourceType,
+)
+from app.scoring import (
+    check_vocal_overlap,
+    compute_attack_score,
+    compute_beat_score,
+    compute_ending_score,
+    compute_energy_score,
 )
 
 router = APIRouter()
@@ -69,6 +81,27 @@ def _get_run_pipeline():
     from app.pipeline import run_pipeline
 
     return run_pipeline
+
+
+def _to_candidate(row: dict) -> Candidate:
+    return Candidate(
+        id=row["candidate_idx"],
+        rank=row["rank"],
+        start=row["start_time"],
+        end=row["end_time"],
+        score=row["score"],
+        attack=row["attack"],
+        ending=row["ending"],
+        energy=row["energy"],
+        phrase_score=row.get("phrase_score"),
+        vocal_overlap=bool(row["vocal_overlap"]),
+        best=bool(row["is_best"]),
+        source_kind=row.get("source_kind"),
+        source_segment_id=row.get("source_segment_idx"),
+        source_text=row.get("source_text"),
+        source_start=row.get("source_start"),
+        source_end=row.get("source_end"),
+    )
 
 
 @router.get("/api/tracks", response_model=list[Track])
@@ -141,6 +174,92 @@ async def analyze_track(track_id: str, request: AnalyzeTrackRequest, background_
     db.update_status(track_id, AnalysisStatus.UPLOADED.value)
     background_tasks.add_task(_get_run_pipeline(), track_id, str(original_path), request.config)
     return AnalyzeAcceptedResponse(track_id=track_id, status=AnalysisStatus.UPLOADED)
+
+
+@router.post("/api/tracks/{track_id}/candidates/manual", response_model=Candidate)
+async def add_manual_candidate(track_id: str, request: AddManualCandidateRequest):
+    db = Database()
+    track = db.get_track(track_id)
+    if not track:
+        raise HTTPException(status_code=404, detail=f"Track not found: {track_id}")
+
+    timeline_row = db.get_timeline(track_id)
+    if not timeline_row:
+        raise HTTPException(status_code=400, detail="Timeline not available for this track")
+
+    start = min(request.start, request.end)
+    end = max(request.start, request.end)
+    start = max(0.0, start)
+    end = min(float(track.get("duration") or end), end)
+    if end - start < 0.3:
+        raise HTTPException(status_code=400, detail="Manual candidate must be at least 0.3s long")
+
+    beats = np.array(json.loads(timeline_row["beats_json"]), dtype=float)
+    rms = np.array(json.loads(timeline_row["rms_json"]), dtype=float)
+    onsets = np.array(json.loads(timeline_row["onsets_json"]), dtype=float) if timeline_row.get("onsets_json") else np.array([])
+    sr = int(track.get("sr") or 44100)
+    hop = int(timeline_row.get("hop_length") or 512)
+
+    vocal_segments = [
+        {
+            "start": s["start_time"],
+            "end": s["end_time"],
+        }
+        for s in db.get_vocal_segments(track_id)
+    ]
+
+    attack = int(compute_attack_score(start, onsets))
+    ending = int(compute_ending_score(end, onsets, beats, rms, sr, hop))
+    energy = int(compute_energy_score(start, end, rms, sr, hop))
+    beat = int(compute_beat_score(start, end, beats))
+    score = int((attack + ending + energy + beat) / 4.0)
+    overlap = check_vocal_overlap(start, end, vocal_segments)
+
+    candidate_idx = db.next_candidate_idx(track_id)
+    source_text = request.source_text or f"Manual {start:.1f}s → {end:.1f}s"
+    db.insert_candidate(
+        track_id,
+        candidate_idx=candidate_idx,
+        rank=999,
+        start=start,
+        end=end,
+        score=score,
+        attack=attack,
+        ending=ending,
+        energy=energy,
+        vocal_overlap=overlap,
+        is_best=False,
+        phrase_score=None,
+        source_kind="manual",
+        source_segment_idx=None,
+        source_text=source_text,
+        source_start=start,
+        source_end=end,
+    )
+    db.recompute_candidate_ranks(track_id)
+
+    row = db.get_candidate(track_id, candidate_idx)
+    if not row:
+        raise HTTPException(status_code=500, detail="Failed to load inserted candidate")
+
+    return _to_candidate(row)
+
+
+@router.delete("/api/tracks/{track_id}/candidates/{candidate_id}", response_model=DeleteCandidateResponse)
+async def delete_manual_candidate(track_id: str, candidate_id: int):
+    db = Database()
+    track = db.get_track(track_id)
+    if not track:
+        raise HTTPException(status_code=404, detail=f"Track not found: {track_id}")
+
+    existing = db.get_candidate(track_id, candidate_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail=f"Candidate not found: {candidate_id}")
+
+    db.delete_candidate(track_id, candidate_id)
+    db.recompute_candidate_ranks(track_id)
+
+    return DeleteCandidateResponse(ok=True, deleted_candidate_id=candidate_id)
 
 
 @router.get("/api/tracks/{track_id}/audio/{stem}")

@@ -99,6 +99,14 @@ def _materialize_original_audio(source: Path, destination: Path) -> None:
     audio.export(destination, format="mp3", bitrate="192k")
 
 
+def _compute_rms_envelope(audio_path: Path, hop_length: int = 512) -> np.ndarray:
+    """Compute an RMS envelope for waveform rendering."""
+    import librosa
+
+    y, _sr = librosa.load(str(audio_path), sr=None, mono=True)
+    return librosa.feature.rms(y=y, hop_length=hop_length)[0]
+
+
 async def run_pipeline(
     track_id: str, audio_path: str, config: AnalysisConfig
 ) -> None:
@@ -172,12 +180,18 @@ async def _run_pipeline_inner(
         )
 
         # ── Step 5: Store timeline ──────────────────────────────────
+        orig_rms = await asyncio.to_thread(_compute_rms_envelope, orig_dest, rhythm["hop"])
+        vox_rms = await asyncio.to_thread(_compute_rms_envelope, vox_dest, rhythm["hop"])
+
         db.upsert_timeline(
             track_id,
             beats_json=json.dumps([float(x) for x in np.asarray(rhythm["beat_times"])]),
             rms_json=json.dumps([float(x) for x in np.asarray(rhythm["rms"])]),
             onsets_json=json.dumps([float(x) for x in np.asarray(rhythm["onset_times"])]) if rhythm["onset_times"] is not None else None,
             hop_length=rhythm["hop"],
+            orig_rms_json=json.dumps([float(x) for x in np.asarray(orig_rms)]),
+            inst_rms_json=json.dumps([float(x) for x in np.asarray(rhythm["rms"])]),
+            vox_rms_json=json.dumps([float(x) for x in np.asarray(vox_rms)]),
         )
 
         # ── Step 6: Store vocal segments ────────────────────────────

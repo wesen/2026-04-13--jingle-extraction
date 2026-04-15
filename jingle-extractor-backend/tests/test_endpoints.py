@@ -1,5 +1,6 @@
 """Tests for presets, tracks, generation runs, and analysis status responses."""
 
+import json
 from pathlib import Path
 
 
@@ -289,3 +290,117 @@ def test_mine_returns_lyric_aligned_candidates_without_rerunning_pipeline(client
     )
     assert short_phrase_candidate["end"] - short_phrase_candidate["start"] >= 2.0
     assert short_phrase_candidate["source_text"] == "Yow!"
+
+
+def test_lyric_aligned_splits_long_segments_into_multiple_windows(client, test_db):
+    track_id = "lyric_long_segment_track"
+    test_db.create_track(track_id, "/tmp/lyric_long_segment_track.mp3", status="complete")
+    test_db.update_track_metadata(
+        track_id,
+        duration=40.0,
+        bpm=120.0,
+        language="en",
+        lang_conf=0.9,
+        sr=100,
+        dr_db=12.0,
+    )
+    test_db.upsert_timeline(
+        track_id,
+        beats_json="[0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5, 11.0, 11.5, 12.0]",
+        rms_json="[3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0]",
+        onsets_json="[2.0, 4.0, 6.0, 8.0, 10.0, 12.0]",
+        hop_length=100,
+    )
+
+    words = [
+        {"word": "burning", "start": 2.0, "end": 2.4},
+        {"word": "power", "start": 2.45, "end": 2.9},
+        {"word": "rising", "start": 3.0, "end": 3.4},
+        {"word": "fast!", "start": 3.45, "end": 3.9},
+        {"word": "spinning", "start": 4.0, "end": 4.4},
+        {"word": "fire", "start": 4.45, "end": 4.9},
+        {"word": "through", "start": 5.0, "end": 5.4},
+        {"word": "night!", "start": 5.45, "end": 5.9},
+        {"word": "never", "start": 6.0, "end": 6.4},
+        {"word": "slowing", "start": 6.45, "end": 6.9},
+        {"word": "down", "start": 7.0, "end": 7.4},
+        {"word": "again!", "start": 7.45, "end": 7.9},
+    ]
+
+    test_db.insert_vocal_segment(
+        track_id,
+        segment_idx=1,
+        start=2.0,
+        end=7.9,
+        text="burning power rising fast spinning fire through night never slowing down again",
+        confidence=0.9,
+        words_json=json.dumps(words),
+    )
+
+    resp = client.post(
+        "/api/mine",
+        json={
+            "trackId": track_id,
+            "config": {
+                "min_dur": 2.0,
+                "max_dur": 4.0,
+                "min_score": 0,
+                "vocal_mode": "any",
+                "candidate_mode": "lyric_aligned",
+                "lyric_padding_before": 0.5,
+                "lyric_padding_after": 0.5,
+                "atk_w": 3,
+                "end_w": 3,
+                "nrg_w": 2,
+                "beat_w": 1,
+                "max_cand": 10,
+                "fade_in": 20,
+                "fade_out": 50,
+                "fmt": "mp3",
+                "br": 192,
+            },
+        },
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) >= 2
+    assert all(cand["source_segment_id"] == 1 for cand in data)
+
+
+def test_manual_candidate_add_and_delete(client, test_db):
+    track_id = "manual_candidate_track"
+    test_db.create_track(track_id, "/tmp/manual_candidate_track.mp3", status="complete")
+    test_db.update_track_metadata(
+        track_id,
+        duration=30.0,
+        bpm=120.0,
+        language="en",
+        lang_conf=0.95,
+        sr=100,
+        dr_db=10.0,
+    )
+    test_db.upsert_timeline(
+        track_id,
+        beats_json="[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]",
+        rms_json="[2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]",
+        onsets_json="[1.0, 3.0, 5.0]",
+        hop_length=100,
+    )
+
+    add_resp = client.post(
+        f"/api/tracks/{track_id}/candidates/manual",
+        json={"start": 2.0, "end": 4.2, "source_text": "Manual test"},
+    )
+    assert add_resp.status_code == 200
+    cand = add_resp.json()
+    assert cand["source_kind"] == "manual"
+    assert cand["source_text"] == "Manual test"
+    candidate_id = cand["id"]
+
+    del_resp = client.delete(f"/api/tracks/{track_id}/candidates/{candidate_id}")
+    assert del_resp.status_code == 200
+    assert del_resp.json()["ok"] is True
+
+    rows = test_db.get_candidates(track_id)
+    assert rows == []

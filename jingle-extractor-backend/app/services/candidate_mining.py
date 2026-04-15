@@ -58,12 +58,74 @@ def _build_rhythmic_windows(
     return windows
 
 
+def _word_start(word: dict[str, Any], fallback: float) -> float:
+    return float(word.get("start", fallback))
+
+
+def _word_end(word: dict[str, Any], fallback: float) -> float:
+    return float(word.get("end", fallback))
+
+
+def _word_text(word: dict[str, Any]) -> str:
+    return str(word.get("word", "")).strip()
+
+
+def _chunk_span(words: list[dict[str, Any]]) -> float:
+    if not words:
+        return 0.0
+    return _word_end(words[-1], 0.0) - _word_start(words[0], 0.0)
+
+
+def _split_words_for_lyric_windows(
+    words: list[dict[str, Any]],
+    *,
+    min_chunk_duration: float,
+    max_chunk_duration: float,
+) -> list[list[dict[str, Any]]]:
+    if not words:
+        return []
+
+    normalized = sorted(
+        [w for w in words if "start" in w and "end" in w],
+        key=lambda w: _word_start(w, 0.0),
+    )
+    if not normalized:
+        return []
+
+    chunks: list[list[dict[str, Any]]] = []
+    current: list[dict[str, Any]] = [normalized[0]]
+
+    for word in normalized[1:]:
+        current.append(word)
+        span = _chunk_span(current)
+        token = _word_text(word)
+        punctuation_break = token.endswith((".", "!", "?", ";", ":", ","))
+
+        if span >= max_chunk_duration or (punctuation_break and span >= min_chunk_duration):
+            chunks.append(current)
+            current = []
+
+    if current:
+        chunks.append(current)
+
+    # Merge tiny trailing chunks to avoid micro windows that rarely score well.
+    merged: list[list[dict[str, Any]]] = []
+    for chunk in chunks:
+        if merged and _chunk_span(chunk) < min_chunk_duration * 0.75:
+            merged[-1] = [*merged[-1], *chunk]
+        else:
+            merged.append(chunk)
+
+    return merged
+
+
 def _build_lyric_aligned_windows(
     track_duration: float,
     vocal_segments: list[dict[str, Any]],
     config: AnalysisConfig,
 ) -> list[dict[str, Any]]:
     windows: list[dict[str, Any]] = []
+    next_idx = 1
 
     for idx, segment in enumerate(vocal_segments, start=1):
         seg_id = int(segment.get("id", segment.get("segment_idx", idx)))
@@ -72,40 +134,85 @@ def _build_lyric_aligned_windows(
         seg_text = str(segment.get("text", "")).strip() or f"Segment {seg_id}"
         seg_words = list(segment.get("words", []))
 
-        start = max(0.0, seg_start - config.lyric_padding_before)
-        end = min(track_duration, seg_end + config.lyric_padding_after)
+        phrase_max_duration = max(
+            0.8,
+            config.max_dur - config.lyric_padding_before - config.lyric_padding_after,
+        )
+        phrase_min_duration = max(0.4, min(config.min_dur, phrase_max_duration) * 0.6)
 
-        current_duration = end - start
-        if current_duration < config.min_dur:
-            deficit = config.min_dur - current_duration
-            start = max(0.0, start - deficit / 2.0)
-            end = min(track_duration, end + deficit / 2.0)
+        chunked_words = _split_words_for_lyric_windows(
+            seg_words,
+            min_chunk_duration=phrase_min_duration,
+            max_chunk_duration=phrase_max_duration,
+        )
+
+        sources: list[dict[str, Any]] = []
+        if chunked_words:
+            for chunk_idx, chunk_words in enumerate(chunked_words, start=1):
+                source_start = _word_start(chunk_words[0], seg_start)
+                source_end = _word_end(chunk_words[-1], seg_end)
+                source_text = " ".join(_word_text(w) for w in chunk_words).strip() or seg_text
+                sources.append(
+                    {
+                        "source_start": source_start,
+                        "source_end": source_end,
+                        "source_text": source_text,
+                        "words": chunk_words,
+                        "source_kind": "lyric_segment_chunk" if len(chunked_words) > 1 else "lyric_segment",
+                        "chunk_index": chunk_idx,
+                    }
+                )
+        else:
+            sources.append(
+                {
+                    "source_start": seg_start,
+                    "source_end": seg_end,
+                    "source_text": seg_text,
+                    "words": seg_words,
+                    "source_kind": "lyric_segment",
+                    "chunk_index": None,
+                }
+            )
+
+        for source in sources:
+            source_start = float(source["source_start"])
+            source_end = float(source["source_end"])
+
+            start = max(0.0, source_start - config.lyric_padding_before)
+            end = min(track_duration, source_end + config.lyric_padding_after)
 
             current_duration = end - start
             if current_duration < config.min_dur:
-                remaining = config.min_dur - current_duration
-                if start <= 0.0:
-                    end = min(track_duration, end + remaining)
-                elif end >= track_duration:
-                    start = max(0.0, start - remaining)
+                deficit = config.min_dur - current_duration
+                start = max(0.0, start - deficit / 2.0)
+                end = min(track_duration, end + deficit / 2.0)
 
-        duration = end - start
-        if duration < config.min_dur or duration > config.max_dur:
-            continue
+                current_duration = end - start
+                if current_duration < config.min_dur:
+                    remaining = config.min_dur - current_duration
+                    if start <= 0.0:
+                        end = min(track_duration, end + remaining)
+                    elif end >= track_duration:
+                        start = max(0.0, start - remaining)
 
-        windows.append(
-            {
-                "idx": idx,
-                "start": start,
-                "end": end,
-                "source_kind": "lyric_segment",
-                "source_segment_id": seg_id,
-                "source_text": seg_text,
-                "source_start": seg_start,
-                "source_end": seg_end,
-                "words": seg_words,
-            }
-        )
+            duration = end - start
+            if duration < config.min_dur or duration > config.max_dur:
+                continue
+
+            windows.append(
+                {
+                    "idx": next_idx,
+                    "start": start,
+                    "end": end,
+                    "source_kind": source["source_kind"],
+                    "source_segment_id": seg_id,
+                    "source_text": source["source_text"],
+                    "source_start": source_start,
+                    "source_end": source_end,
+                    "words": source["words"],
+                }
+            )
+            next_idx += 1
 
     return windows
 

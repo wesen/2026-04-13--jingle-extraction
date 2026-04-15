@@ -9,6 +9,7 @@ from app.database import Database
 from app.models import (
     AnalysisResponse,
     Candidate,
+    StemWaveforms,
     Track,
     TimelineData,
     VocalSegment,
@@ -58,6 +59,11 @@ async def get_analysis(track_id: str):
         beats=json.loads(timeline_row["beats_json"]),
         rms=json.loads(timeline_row["rms_json"]),
         onsets=json.loads(timeline_row["onsets_json"]) if timeline_row["onsets_json"] else None,
+        waveforms=StemWaveforms(
+            orig=json.loads(timeline_row["orig_rms_json"]) if timeline_row.get("orig_rms_json") else None,
+            inst=json.loads(timeline_row["inst_rms_json"]) if timeline_row.get("inst_rms_json") else json.loads(timeline_row["rms_json"]),
+            vox=json.loads(timeline_row["vox_rms_json"]) if timeline_row.get("vox_rms_json") else None,
+        ),
     )
 
     # Build VocalsData

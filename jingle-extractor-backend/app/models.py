@@ -110,11 +110,18 @@ class TrackLibraryItem(BaseModel):
 # ─── Timeline ───────────────────────────────────────────────────────────────
 
 
+class StemWaveforms(BaseModel):
+    orig: Optional[list[float]] = None
+    inst: Optional[list[float]] = None
+    vox: Optional[list[float]] = None
+
+
 class TimelineData(BaseModel):
     duration: float
     beats: list[float]
     rms: list[float]
     onsets: Optional[list[float]] = None
+    waveforms: Optional[StemWaveforms] = None
 
 
 # ─── Vocals ─────────────────────────────────────────────────────────────────
@@ -245,6 +252,17 @@ class GenerationRunDetailResponse(GenerationRunSummary):
 
 class AnalyzeTrackRequest(BaseModel):
     config: AnalysisConfig
+
+
+class AddManualCandidateRequest(BaseModel):
+    start: float = Field(ge=0)
+    end: float = Field(gt=0)
+    source_text: Optional[str] = None
+
+
+class DeleteCandidateResponse(BaseModel):
+    ok: bool = True
+    deleted_candidate_id: int
 
 
 # ─── Request Models ─────────────────────────────────────────────────────────
