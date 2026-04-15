@@ -7,11 +7,19 @@ import type {
   AnalysisConfig,
   AnalyzeAcceptedResponse,
   Candidate,
+  CreateGenerationAcceptedResponse,
   ExportFormat,
+  GenerationComposerValue,
+  GenerationRunDetailResponse,
+  GenerationRunSummary,
   GetAnalysisResponse,
+  LibrarySort,
+  LibrarySourceFilter,
+  LibraryStatusFilter,
   Presets,
   StemType,
   Track,
+  TrackLibraryItem,
 } from './types';
 
 // ─── Request / Response types ────────────────────────────────────────────────
@@ -48,6 +56,18 @@ export interface ExportBatchRequest {
   br: number | null;
 }
 
+export interface ListLibraryTracksParams {
+  source?: LibrarySourceFilter;
+  status?: LibraryStatusFilter;
+  search?: string;
+  sort?: LibrarySort;
+}
+
+export interface AnalyzeTrackRequest {
+  trackId: string;
+  config: AnalysisConfig;
+}
+
 // ─── API definition ─────────────────────────────────────────────────────────
 
 const API_BASE_URL =
@@ -56,7 +76,7 @@ const API_BASE_URL =
 export const jingleApi = createApi({
   reducerPath: 'jingleApi',
   baseQuery: fetchBaseQuery({ baseUrl: API_BASE_URL }),
-  tagTypes: ['Analysis', 'Candidates', 'Tracks', 'Presets'],
+  tagTypes: ['Analysis', 'Candidates', 'Tracks', 'Presets', 'Generations', 'Library'],
   endpoints: (builder) => ({
     // ── Analysis ────────────────────────────────────────────────────────────
 
@@ -127,6 +147,69 @@ export const jingleApi = createApi({
       }),
     }),
 
+    // ── Studio / Generation ───────────────────────────────────────────────
+
+    /**
+     * POST /api/generations
+     * Start a MiniMax generation batch.
+     */
+    createGeneration: builder.mutation<CreateGenerationAcceptedResponse, GenerationComposerValue>({
+      query: (body) => ({
+        url: 'generations',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Generations', 'Library'],
+    }),
+
+    /**
+     * GET /api/generations
+     * List generation runs.
+     */
+    listGenerations: builder.query<GenerationRunSummary[], void>({
+      query: () => 'generations',
+      providesTags: ['Generations'],
+    }),
+
+    /**
+     * GET /api/generations/:id
+     * Retrieve run detail including generated tracks.
+     */
+    getGeneration: builder.query<GenerationRunDetailResponse, string>({
+      query: (generationId) => `generations/${encodeURIComponent(generationId)}`,
+      providesTags: ['Generations', 'Library'],
+    }),
+
+    /**
+     * GET /api/library/tracks
+     * List library tracks with optional server-side filtering.
+     */
+    listLibraryTracks: builder.query<TrackLibraryItem[], ListLibraryTracksParams | void>({
+      query: (params) => {
+        const query = new URLSearchParams();
+        if (params?.source && params.source !== 'all') query.set('source', params.source);
+        if (params?.status && params.status !== 'all') query.set('status', params.status);
+        if (params?.search) query.set('search', params.search);
+        if (params?.sort && params.sort !== 'newest') query.set('sort', params.sort);
+        const qs = query.toString();
+        return qs ? `library/tracks?${qs}` : 'library/tracks';
+      },
+      providesTags: ['Library', 'Tracks'],
+    }),
+
+    /**
+     * POST /api/library/tracks/:trackId/analyze
+     * Analyze a known catalog track by id.
+     */
+    analyzeLibraryTrack: builder.mutation<AnalyzeAcceptedResponse, AnalyzeTrackRequest>({
+      query: ({ trackId, config }) => ({
+        url: `library/tracks/${encodeURIComponent(trackId)}/analyze`,
+        method: 'POST',
+        body: { config },
+      }),
+      invalidatesTags: ['Analysis', 'Tracks', 'Library'],
+    }),
+
     // ── Catalog ─────────────────────────────────────────────────────────────
 
     /**
@@ -157,6 +240,11 @@ export const {
   useMineCandidatesMutation,
   useExportClipMutation,
   useExportBatchMutation,
+  useCreateGenerationMutation,
+  useListGenerationsQuery,
+  useGetGenerationQuery,
+  useListLibraryTracksQuery,
+  useAnalyzeLibraryTrackMutation,
   useListTracksQuery,
   useGetPresetsQuery,
 } = jingleApi;

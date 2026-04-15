@@ -104,6 +104,7 @@ export interface AnalysisResponse {
 }
 
 export type AnalysisStatus =
+  | 'not_started'
   | 'uploaded'
   | 'separating_stems'
   | 'transcribing'
@@ -164,6 +165,17 @@ export interface GenerationRunSummary {
   countCompleted: number;
   status: GenerationRunStatus;
   createdAt?: string;
+}
+
+export interface CreateGenerationAcceptedResponse {
+  generation_id: string;
+  status: GenerationRunStatus;
+  count_requested: number;
+}
+
+export interface GenerationRunDetailResponse extends GenerationRunSummary {
+  error_message?: string | null;
+  tracks: TrackLibraryItem[];
 }
 
 export interface TrackLibraryItem {

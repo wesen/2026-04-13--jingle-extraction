@@ -8,7 +8,13 @@
  */
 
 import { useCallback, useEffect, useMemo } from 'react';
-import { useAnalyzeMutation, useGetAnalysisQuery, useExportClipMutation, useMineCandidatesMutation } from '../../api/jingleApi';
+import {
+  useAnalyzeLibraryTrackMutation,
+  useAnalyzeMutation,
+  useGetAnalysisQuery,
+  useExportClipMutation,
+  useMineCandidatesMutation,
+} from '../../api/jingleApi';
 import { useAppDispatch, useAppSelector } from '../../hooks/useRedux';
 import { useAudioPlayer } from '../../hooks/useAudioPlayer';
 import {
@@ -37,11 +43,16 @@ import './JingleExtractor.css';
 
 interface JingleExtractorProps {
   trackId?: string;
+  /** When true, trigger analysis via /api/library/tracks/:id/analyze */
+  useTrackAnalyze?: boolean;
 }
 
 type DisplayCandidate = Candidate & { edited?: boolean };
 
-export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractorProps) {
+export function JingleExtractor({
+  trackId = 'thrash_metal_01',
+  useTrackAnalyze = false,
+}: JingleExtractorProps) {
   const dispatch = useAppDispatch();
 
   // ── Local UI state ────────────────────────────────────────────────────
@@ -66,7 +77,8 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
     isError,
     refetch,
   } = useGetAnalysisQuery(trackId);
-  const [runAnalysis, { isLoading: isAnalyzing }] = useAnalyzeMutation();
+  const [runAnalysis, { isLoading: isAnalyzingByFile }] = useAnalyzeMutation();
+  const [analyzeTrackById, { isLoading: isAnalyzingByTrackId }] = useAnalyzeLibraryTrackMutation();
   const [mineCandidates, { isLoading: isMining }] = useMineCandidatesMutation();
   const [exportClip] = useExportClipMutation();
 
@@ -93,12 +105,16 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
         return;
       }
 
-      await runAnalysis({ audio_file: trackId, config }).unwrap();
+      if (useTrackAnalyze) {
+        await analyzeTrackById({ trackId, config }).unwrap();
+      } else {
+        await runAnalysis({ audio_file: trackId, config }).unwrap();
+      }
       await refetch();
     } catch (e) {
       console.error('Analysis failed:', e);
     }
-  }, [analysis, config, mineCandidates, refetch, runAnalysis, trackId]);
+  }, [analysis, analyzeTrackById, config, mineCandidates, refetch, runAnalysis, trackId, useTrackAnalyze]);
 
   const handleReset = useCallback(() => {
     dispatch(applyPreset({ name: 'Default', config: DEFAULT_PRESETS.Default }));
@@ -272,7 +288,7 @@ export function JingleExtractor({ trackId = 'thrash_metal_01' }: JingleExtractor
               onChange={handleConfigChange}
               onRun={handleRunAnalysis}
               onReset={handleReset}
-              isLoading={isAnalyzing || isMining}
+              isLoading={isAnalyzingByFile || isAnalyzingByTrackId || isMining}
               style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
             />
           </MacWindow>
