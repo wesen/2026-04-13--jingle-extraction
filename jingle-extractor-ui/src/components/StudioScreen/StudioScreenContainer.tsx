@@ -8,12 +8,10 @@ import type {
 import type { AppDispatch, RootState } from '../../app/store';
 import {
   selectFilteredAndSortedLibraryTracks,
-  selectStudioDraft,
   selectStudioFilters,
   selectStudioSelection,
 } from '../../features/studio/selectors';
 import {
-  setDraft,
   setLibrarySearch,
   setLibrarySort,
   setLibrarySourceFilter,
@@ -22,6 +20,7 @@ import {
   setSelectedRunId,
   setSelectedTrackId,
 } from '../../features/studio/studioSlice';
+import { GenerationComposerContainer } from '../GenerationComposer';
 import { StudioScreen } from './StudioScreen';
 
 interface StudioScreenContainerProps {
@@ -48,7 +47,6 @@ export function StudioScreenContainer({
   isGenerating = false,
 }: StudioScreenContainerProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const draft = useSelector(selectStudioDraft);
   const selection = useSelector(selectStudioSelection);
   const filters = useSelector(selectStudioFilters);
   const filteredLibrary = useSelector((state: RootState) =>
@@ -61,11 +59,13 @@ export function StudioScreenContainer({
 
   return (
     <StudioScreen
-      composerValue={draft}
-      onComposerChange={(value) => dispatch(setDraft(value))}
-      onGenerate={() => onGenerate?.(draft)}
-      onSavePrompt={onSavePrompt ? () => onSavePrompt(draft) : undefined}
-      isGenerating={isGenerating}
+      composerPanel={(
+        <GenerationComposerContainer
+          onGenerate={onGenerate}
+          onSavePrompt={onSavePrompt}
+          isGenerating={isGenerating}
+        />
+      )}
       currentRun={currentRun}
       currentRunTracks={currentRunTracks}
       libraryTracks={filteredLibrary}

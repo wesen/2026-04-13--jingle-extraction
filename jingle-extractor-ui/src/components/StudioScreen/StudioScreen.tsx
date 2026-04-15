@@ -7,6 +7,7 @@ import type {
   Track,
   TrackLibraryItem,
 } from '../../api/types';
+import type { ReactNode } from 'react';
 import { PARTS } from '../JingleExtractor/parts';
 import { GenerationComposer } from '../GenerationComposer';
 import { MacWindow } from '../MacWindow';
@@ -16,12 +17,7 @@ import { TrackLibraryList } from '../TrackLibraryList';
 import { TrackResultsList } from '../TrackResultsList';
 import './StudioScreen.css';
 
-interface StudioScreenProps {
-  composerValue: GenerationComposerValue;
-  onComposerChange: (value: GenerationComposerValue) => void;
-  onGenerate: () => void;
-  onSavePrompt?: () => void;
-  isGenerating?: boolean;
+interface StudioScreenBaseProps {
   currentRun: GenerationRunSummary | null;
   currentRunTracks: TrackLibraryItem[];
   libraryTracks: TrackLibraryItem[];
@@ -41,6 +37,29 @@ interface StudioScreenProps {
   onOpenInMining: (track: TrackLibraryItem) => void;
 }
 
+interface StudioScreenInlineComposerProps {
+  composerPanel?: never;
+  composerValue: GenerationComposerValue;
+  onComposerChange: (value: GenerationComposerValue) => void;
+  onGenerate: () => void;
+  onSavePrompt?: () => void;
+  isGenerating?: boolean;
+}
+
+interface StudioScreenSlotComposerProps {
+  composerPanel: ReactNode;
+  composerValue?: never;
+  onComposerChange?: never;
+  onGenerate?: never;
+  onSavePrompt?: never;
+  isGenerating?: never;
+}
+
+type StudioScreenProps = StudioScreenBaseProps & (
+  | StudioScreenInlineComposerProps
+  | StudioScreenSlotComposerProps
+);
+
 function toMenuTrack(track: TrackLibraryItem | null): Track {
   return {
     id: track?.display_name ?? 'studio',
@@ -53,30 +72,26 @@ function toMenuTrack(track: TrackLibraryItem | null): Track {
   };
 }
 
-export function StudioScreen({
-  composerValue,
-  onComposerChange,
-  onGenerate,
-  onSavePrompt,
-  isGenerating = false,
-  currentRun,
-  currentRunTracks,
-  libraryTracks,
-  selectedTrackId,
-  previewingTrackId = null,
-  librarySearch,
-  librarySourceFilter,
-  libraryStatusFilter,
-  librarySort,
-  onLibrarySearchChange,
-  onLibrarySourceFilterChange,
-  onLibraryStatusFilterChange,
-  onLibrarySortChange,
-  onSelectTrack,
-  onPreviewTrack,
-  onAnalyzeTrack,
-  onOpenInMining,
-}: StudioScreenProps) {
+export function StudioScreen(props: StudioScreenProps) {
+  const {
+    currentRun,
+    currentRunTracks,
+    libraryTracks,
+    selectedTrackId,
+    previewingTrackId = null,
+    librarySearch,
+    librarySourceFilter,
+    libraryStatusFilter,
+    librarySort,
+    onLibrarySearchChange,
+    onLibrarySourceFilterChange,
+    onLibraryStatusFilterChange,
+    onLibrarySortChange,
+    onSelectTrack,
+    onPreviewTrack,
+    onAnalyzeTrack,
+    onOpenInMining,
+  } = props;
   const selectedTrack =
     currentRunTracks.find((track) => track.id === selectedTrackId)
     ?? libraryTracks.find((track) => track.id === selectedTrackId)
@@ -90,13 +105,17 @@ export function StudioScreen({
         <div data-part={PARTS.studioColumn}>
           <MacWindow title="Generate Track Batch">
             <div style={{ padding: 8 }}>
-              <GenerationComposer
-                value={composerValue}
-                onChange={onComposerChange}
-                onGenerate={onGenerate}
-                onSavePrompt={onSavePrompt}
-                isGenerating={isGenerating}
-              />
+              {'composerPanel' in props
+                ? props.composerPanel
+                : (
+                  <GenerationComposer
+                    value={props.composerValue}
+                    onChange={props.onComposerChange}
+                    onGenerate={props.onGenerate}
+                    onSavePrompt={props.onSavePrompt}
+                    isGenerating={props.isGenerating}
+                  />
+                )}
             </div>
           </MacWindow>
 
