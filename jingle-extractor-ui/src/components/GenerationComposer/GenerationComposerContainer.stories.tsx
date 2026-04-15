@@ -61,3 +61,11 @@ export const InvalidDraft: Story = {
     />
   ),
 };
+
+export const NarrowLayout: Story = {
+  render: () => (
+    <div style={{ maxWidth: 420 }}>
+      <StoreBackedComposer preloadedDraft={studioComposerFixture} />
+    </div>
+  ),
+};

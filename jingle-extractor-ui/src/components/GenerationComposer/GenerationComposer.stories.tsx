@@ -78,3 +78,11 @@ export const InvalidDraft: Story = {
     />
   ),
 };
+
+export const NarrowLayout: Story = {
+  render: () => (
+    <div style={{ maxWidth: 420 }}>
+      <ControlledComposer />
+    </div>
+  ),
+};
